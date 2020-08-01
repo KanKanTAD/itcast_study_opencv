@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     createTrackbar("bar --" + to_string(i++), _wnd_(2), &value, 255);
   }
   int min_contour_area = 10;
-  createTrackbar("min_contour_area", _wnd_(2), &min_contour_area, 2000);
+  createTrackbar("min_contour_area", _wnd_(2), &min_contour_area, 3000);
 
   auto handle_it_1 = [&](Mat &src, Mat &res, Mat &draw) mutable {
     auto w = src.size().width;
@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
 
     if (contours.empty())
       return;
+    min_contour_area = 1990;
     for (int i = 0; i < contours.size(); ++i) {
       if (contourArea(contours.at(i)) <= min_contour_area) {
         continue;
@@ -132,6 +133,72 @@ int main(int argc, char **argv) {
     polylines(draw, vector<Mat>{pts}, true, Scalar{0, 0, 255}, 3);
   };
 
+  namedWindow(_wnd_(3));
+  int bars2[] = {0, 0, 0, 255, 255, 255, 1, 1, 1, 1};
+  for (int &value : bars2) {
+    createTrackbar("bar --" + to_string(i++), _wnd_(3), &value, 255);
+  }
+
+  int min_contour_area2 = 1;
+  createTrackbar("min_contour_area2", _wnd_(3), &min_contour_area2, 3000);
+
+  auto handle_it_2 = [&](Mat &src, Mat &res, Mat &draw) mutable {
+    Mat temp;
+    Mat hsv;
+    cvtColor(src, hsv, COLOR_BGR2HSV);
+    bars2[6] = 15;
+    bars2[7] = 15;
+    blur(hsv, hsv, {std::max(1, bars2[6]), std::max(1, bars2[7])});
+    bars2[0] = 0;
+    bars2[1] = 0;
+    bars2[2] = 0;
+    bars2[3] = 255;
+    bars2[4] = 160;
+    bars2[5] = 255;
+    inRange(hsv, Vec3b{uint8_t(bars2[0]), uint8_t(bars2[1]), uint8_t(bars2[2])},
+            Vec3b{uint8_t(bars2[3]), uint8_t(bars2[4]), uint8_t(bars2[5])},
+            temp);
+
+    // dilate(temp, res, Vec2i{std::max(1, bars2[8]), std::max(1, bars2[9])});
+    res = temp;
+
+    vector<vector<Point2i>> contours;
+    vector<Point2i> approx1, approx2;
+    findContours(temp, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    if (contours.empty())
+      return;
+    for (int i = 0; i < contours.size(); ++i) {
+      if (contourArea(contours.at(i)) <= min_contour_area2) {
+        continue;
+      }
+      std::copy(contours.at(i).begin(), contours.at(i).end(),
+                back_inserter(approx1));
+    }
+    if (approx1.empty()) {
+      return;
+    }
+    // cv::convexHull(approx1, approx2);
+    // if (approx2.empty()) {
+    // return;
+    //}
+    // double epsilon = 0.02 * arcLength(approx2, true);
+    // approx1.clear();
+    // approxPolyDP(approx2, approx1, epsilon, true);
+    // if (approx1.size() < 4) {
+    // return;
+    //}
+    RotatedRect r_rect = minAreaRect(approx1);
+    Point2i _center{cvRound(r_rect.center.x), cvRound(r_rect.center.y)};
+    circle(draw, _center, 3, Scalar{0, 200, 255}, -1);
+
+    Mat pts;
+    boxPoints(r_rect, pts);
+    pts.convertTo(pts, CV_32SC1);
+
+    polylines(draw, vector<Mat>{pts}, true, Scalar{0, 200, 255}, 3);
+  };
+
   bool is_continue = true;
   while (is_continue) {
     std::unique_ptr<bool, std::function<void(bool *)>> __0x00001{
@@ -156,6 +223,11 @@ int main(int argc, char **argv) {
     Mat res1;
     handle_it_1(frame, res1, to_draw);
     imshow(_wnd_(2), res1);
+
+    Mat res2;
+    handle_it_2(frame, res2, to_draw);
+    imshow(_wnd_(3), res2);
+
     imshow(_wnd_(1), to_draw);
   }
 
