@@ -5,6 +5,7 @@
 #include <functional>
 #include <ios>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <opencv2/core.hpp>
 #include <opencv2/core/core_c.h>
@@ -92,7 +93,7 @@ int main(int argc, char **argv) {
     backProject.copyTo(res(_rect));
 
     vector<vector<Point2i>> contours;
-    std::set<Point2i> set_hull;
+    vector<Point2i> approx1, approx2;
     findContours(res, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
     if (contours.empty())
@@ -101,15 +102,34 @@ int main(int argc, char **argv) {
       if (contourArea(contours.at(i)) <= min_contour_area) {
         continue;
       }
-      // drawContours(draw, contours, i, Scalar(255,255,0), -1);
-      set_hull.insert(contours.at(i).begin(), contours.at(i).end());
+      // drawContours(draw, contours, i, Scalar(255, 255, 0), -1);
+      std::copy(contours.at(i).begin(), contours.at(i).end(),
+                back_inserter(approx1));
     }
-    vector<Point2i> _hull{set_hull.begin(), set_hull.end()};
-    vector<Point2i> hl;
+    if (approx1.empty()) {
+      return;
+    }
+    cv::convexHull(approx1, approx2);
+    if (approx2.empty()) {
+      return;
+    }
+    double epsilon = 0.02 * arcLength(approx2, true);
+    approx1.clear();
+    approxPolyDP(approx2, approx1, epsilon, true);
+    if (approx1.size() < 4) {
+      return;
+    }
+    RotatedRect r_rect = minAreaRect(approx1);
+    Point2i _center{cvRound(r_rect.center.x), cvRound(r_rect.center.y)};
+    circle(draw, _center, 3, Scalar{0, 0, 255}, -1);
 
-    cv::convexHull(_hull, hl);
-    vector<Point2i> approx;
-    double esplion = 0.02 * arcLength(hl, true);
+    Mat pts;
+    boxPoints(r_rect, pts);
+    pts.convertTo(pts, CV_32SC1);
+
+    // polylines(draw, vector<vector<Point2i>>{approx1}, true, Scalar{0, 0,
+    // 255}, 3);
+    polylines(draw, vector<Mat>{pts}, true, Scalar{0, 0, 255}, 3);
   };
 
   bool is_continue = true;
