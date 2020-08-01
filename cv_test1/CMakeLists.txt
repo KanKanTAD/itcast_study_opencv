@@ -7,7 +7,6 @@ include(CTest)
 enable_testing()
 
 
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /home/tad/opencv_build/pkg4.3.0/lib/cmake/opencv4/)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} /home/tad/opencv_build/pkg3.4.1/share/OpenCV/)
 find_package(OpenCV  REQUIRED)
 message(STATUS "OpenCV library status:")
