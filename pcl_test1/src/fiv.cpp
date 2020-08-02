@@ -1,27 +1,25 @@
 #include <chrono>
 #include <iostream>
+#include <pcl/impl/point_types.hpp>
+#include <pcl/point_cloud.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <thread>
 
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
-#include <thread>
 
 using namespace std;
 
 int main(int argc, char **argv) {
   cout << "hi" << endl;
 
-  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud{
-      new pcl::PointCloud<pcl::PointXYZRGBA>};
-  pcl::io::loadPCDFile("/home/tad/Public/pcl/gitee_pcl/test/pcl_logo.pcd",
-                       *cloud);
+  pcl::PointCloud<pcl::PointXYZ> cloud1;
 
-  pcl::visualization::CloudViewer viewer{"cloud viewer"};
-
-  viewer.showCloud(cloud);
-
+  pcl::visualization::PCLVisualizer viewer;
   while (!viewer.wasStopped()) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    //std::this_thread::sleep_for(std::chrono::milliseconds(300));
+		viewer.spinOnce();
   }
   return 0;
 }
