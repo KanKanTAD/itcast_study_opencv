@@ -25,3 +25,6 @@ target_link_libraries(tri ${PCL_LIBRARIES})
 
 add_executable(foh src/foh.cpp)
 target_link_libraries(foh ${PCL_LIBRARIES})
+
+add_executable(fiv src/fiv.cpp)
+target_link_libraries(fiv ${PCL_LIBRARIES})
