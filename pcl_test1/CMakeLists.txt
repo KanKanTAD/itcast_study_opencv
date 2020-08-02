@@ -15,8 +15,13 @@ link_directories(${PCL_LIBRARIE_DIRS})
 
 
 add_executable(fst src/fst.cpp)
-add_executable(snd src/snd.cpp)
-
-
 target_link_libraries(fst ${PCL_LIBRARIES})
+
+add_executable(snd src/snd.cpp)
 target_link_libraries(snd ${PCL_LIBRARIES})
+
+add_executable(tri src/tri.cpp)
+target_link_libraries(tri ${PCL_LIBRARIES})
+
+add_executable(foh src/foh.cpp)
+target_link_libraries(foh ${PCL_LIBRARIES})
