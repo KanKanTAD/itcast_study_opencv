@@ -12,3 +12,8 @@ link_directories(${PCL_LIBRARIE_DIRS})
 
 #target_link_libraries(pcl_proj ${PCL_LIBRARIES})
 
+
+add_executable(fst src/fst.cpp)
+
+
+target_link_libraries(fst ${PCL_LIBRARIES})
