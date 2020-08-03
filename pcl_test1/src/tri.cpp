@@ -1,9 +1,12 @@
+#include <Eigen/Eigen>
 #include <chrono>
 #include <iostream>
 
+#include <pcl/common/transforms.h>
 #include <pcl/impl/point_types.hpp>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/point_cloud.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/point_cloud_color_handlers.h>
 #include <string>
@@ -28,22 +31,30 @@ int main(int argc, char **argv) {
       new pcl::PointCloud<pcl::PointXYZ>};
   pcl::io::loadPCDFile(pcd_file_path, *cloud1);
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2{
-      new pcl::PointCloud<pcl::PointXYZ>};
-  pcl::io::loadPCDFile(pcd_file_path2, *cloud2);
-
   pcl::visualization::PCLVisualizer::Ptr viewer{
       new pcl::visualization::PCLVisualizer{"3D_Viewer"}};
 
   viewer->setBackgroundColor(0.3, 0.3, 0.3, 0);
+  viewer->addCoordinateSystem(1.0);
 
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> singleColor{
-      255, 255, 0};
-  viewer->addPointCloud(cloud1, singleColor, "cloud1");
+      cloud1, 255, 255, 0};
+  viewer->addPointCloud<pcl::PointXYZ>(cloud1, singleColor, "cloud1");
+
+  Eigen::Matrix4f _transform = Eigen::Matrix4f::Identity();
+  _transform(0, 3) = 1.5;
+  _transform(1, 3) = 1.4;
+
+  decltype(cloud1) trans_cloud{new pcl::PointCloud<pcl::PointXYZ>{}};
+  pcl::transformPointCloud(*cloud1, *trans_cloud, _transform);
+
+  decltype(singleColor) singleColor2{trans_cloud, 0, 255, 0};
+  viewer->addPointCloud<pcl::PointXYZ>(trans_cloud, singleColor2, "trans_cloud",
+                                       0);
 
   while (!viewer->wasStopped()) {
     viewer->spinOnce();
-    //std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(300));
   }
   return 0;
 }

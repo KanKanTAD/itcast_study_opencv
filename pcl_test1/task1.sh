@@ -1,2 +1,2 @@
 #!/usr/bin/env sh
-./b.sh && ./build/fst 
+./b.sh && ./build/fst ./data/milk_color.pcd
