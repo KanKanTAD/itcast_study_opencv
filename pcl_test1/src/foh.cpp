@@ -1,56 +1,54 @@
-#include <Eigen/Eigen>
-#include <chrono>
-#include <iostream>
-
-#include <pcl/impl/point_types.hpp>
 #include <pcl/common/transforms.h>
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/pcl_macros.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/visualization/point_cloud_color_handlers.h>
+
+#include <Eigen/Eigen>
+#include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <pcl/impl/point_types.hpp>
 #include <string>
 #include <thread>
 
+#include "utils.hpp"
+
 using namespace std;
 
-int main(int argc, char **argv) {
-  cout << "hi" << endl;
+int main(int argc, char** argv) {
+    pcl::visualization::PCLVisualizer viewer{"viewer"};
 
-  std::string pcd_file_path{"/home/tad/Public/pcl/gitee_pcl/test/bunny.pcd"};
-  std::string pcd_file_path2{
-      "/home/tad/Public/pcl/gitee_pcl/test/milk_color.pcd"};
-  if (argc >= 2) {
-    pcd_file_path = argv[1];
-  }
-  if (argc >= 3) {
-    pcd_file_path2 = argv[2];
-  }
+    std::string rops_file_path{"/home/tad/Picture/pcl-pcd/rops_cloud.pcd"};
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1{
-      new pcl::PointCloud<pcl::PointXYZ>};
-  pcl::io::loadPCDFile(pcd_file_path, *cloud1);
+    auto rops_cloud = utils::ptcldFromFile<pcl::PointXYZ>(rops_file_path);
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2{
-      new pcl::PointCloud<pcl::PointXYZ>};
-  pcl::io::loadPCDFile(pcd_file_path2, *cloud2);
+    auto _minmax0 = utils::axis_minmax(*rops_cloud, 0);
+    cout << _minmax0.first << ";" << _minmax0.second << endl;
+    viewer.addPointCloud(rops_cloud);
 
-  pcl::visualization::PCLVisualizer::Ptr viewer{
-      new pcl::visualization::PCLVisualizer{"3D_Viewer"}};
+    auto trans_cloud =
+        utils::pass_filte(*rops_cloud, 0, {_minmax0.first + 0.2f, _minmax0.second - 0.2f});
+    for (auto& p : trans_cloud->points) {
+        p.x += 0.8f;
+    }
 
-  viewer->setBackgroundColor(0.3, 0.3, 0.3, 0);
-  viewer->addPointCloud(cloud1, "cloud1");
-  viewer->setPointCloudRenderingProperties(
-      pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 2, "cloud1");
+    auto trans_color = utils::single_color(*trans_cloud, {128, 128, 0});
+    viewer.addPointCloud(trans_cloud, *trans_color, "trans_cloud");
 
-  Eigen::Matrix4f transform_1 = Eigen::Matrix4f::Identity();
-  Eigen::Affine3f transform_2 = Eigen::Affine3f::Identity();
+    auto mean_pos = utils::pos_mean(*trans_cloud);
+    auto mean_pnt = utils::makePntCld_like(*trans_cloud);
+    mean_pnt->points.push_back(mean_pos);
 
-	transform_2.translation() << 1.0,0,0;
-	cout<<transform_2.matrix()<<endl;
+    auto m_p_c = utils::single_color(*mean_pnt, {255, 0, 0});
+    viewer.addPointCloud(mean_pnt, *m_p_c, "trans_cloud_mean_pnt");
 
+    while (viewer.wasStopped() == false) {
+        viewer.spinOnce();
+        pcl_sleep(0.03);
+    }
 
-  while (!viewer->wasStopped()) {
-    viewer->spinOnce();
-  }
-  return 0;
+    return 0;
 }

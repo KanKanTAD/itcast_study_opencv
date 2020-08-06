@@ -8,6 +8,8 @@
 #include <string>
 #include <thread>
 
+#include "utils.hpp"
+
 using namespace std;
 
 int main(int argc, char** argv) {
@@ -19,12 +21,10 @@ int main(int argc, char** argv) {
         pcd_file_path = "/home/tad/Public/pcl/gitee_pcl/test/pcl_logo.pcd";
     }
 
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud{new pcl::PointCloud<pcl::PointXYZRGBA>};
-    pcl::io::loadPCDFile(pcd_file_path, *cloud);
-
+    auto cld_ptr = utils::ptcldFromFile<pcl::PointXYZRGBA>(pcd_file_path);
     pcl::visualization::CloudViewer viewer{"cloud viewer"};
 
-    viewer.showCloud(cloud);
+    viewer.showCloud(cld_ptr);
 
     void (*vizCallabel)(pcl::visualization::PCLVisualizer&) =
         [](pcl::visualization::PCLVisualizer& visualizer) {

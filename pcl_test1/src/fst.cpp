@@ -1,5 +1,6 @@
 #include <pcl/io/io.h>
 #include <pcl/io/pcd_io.h>
+#include <pcl/point_cloud.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/common/common.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -11,6 +12,7 @@
 #include <string>
 #include <thread>
 
+#include "utils.hpp"
 using namespace std;
 
 int main(int argc, char** argv) {
@@ -19,16 +21,16 @@ int main(int argc, char** argv) {
         input_file = argv[1];
     }
 
-    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud{new pcl::PointCloud<pcl::PointXYZRGBA>};
-    pcl::io::loadPCDFile(input_file, *cloud);
+    auto cloud_ptr = utils::ptcldFromFile<pcl::PointXYZRGBA>(input_file);
 
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZRGBA> single_color{cloud, 255, 255, 0};
-
+    auto single_color = utils::single_color<pcl::PointXYZRGBA>(*cloud_ptr, {255, 0, 0});
     pcl::visualization::PCLVisualizer viewer{"3d_viewer"};
+    viewer.setBackgroundColor(0.67, 0.67, 0.67);
     viewer.addCoordinateSystem();
 
-    viewer.addPointCloud(cloud, single_color, "cloud1");
-    viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud1");
+    viewer.addPointCloud(cloud_ptr, *single_color, "cloud1");
+    viewer.setPointCloudRenderingProperties(
+        pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud1");
 
     while (!viewer.wasStopped()) {
         viewer.spinOnce();
