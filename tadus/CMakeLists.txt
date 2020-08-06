@@ -17,7 +17,18 @@ include_directories(
 )
 
 add_executable(gtest_demo_1 test/gtest_demo.cc)
+add_executable(gtest_tadus_str_alg test/tadus_str_alg_test.cc)
+add_executable(gtest_tadus_functional test/tadus_functional_test.cc)
+
 target_link_libraries(gtest_demo_1
+	${GTEST_BOTH_LIBRARIES}
+	${CMAKE_THREAD_LIBS_INIT}
+)
+target_link_libraries(gtest_tadus_str_alg
+	${GTEST_BOTH_LIBRARIES}
+	${CMAKE_THREAD_LIBS_INIT}
+)
+target_link_libraries(gtest_tadus_functional
 	${GTEST_BOTH_LIBRARIES}
 	${CMAKE_THREAD_LIBS_INIT}
 )
@@ -30,4 +41,6 @@ target_link_libraries(gtest_demo_1
 #GTEST_ADD_TESTS(FooTest "${FooTestArgs}" FooUnitTest.cc)
 
 
-add_test(NAME gtest_demo_1 COMMAND gtest_demo_1)
+add_test(NAME Alltests COMMAND gtest_demo_1 gtest_tadus_functional gtest_tadus_str_alg)
+add_test(NAME tadus_str_alg_test COMMAND gtest_tadus_str_alg)
+add_test(NAME tadus_str_alg_test COMMAND gtest_tadus_functional)
