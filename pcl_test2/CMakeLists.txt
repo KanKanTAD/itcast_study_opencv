@@ -17,3 +17,9 @@ link_directories(${PCL_LIBRARIE_DIRS})
 
 add_executable(01_demo src/01_feature.cpp)
 target_link_libraries(01_demo ${PCL_LIBRARIES})
+
+add_executable(02_demo src/02_resampling.cpp)
+target_link_libraries(02_demo ${PCL_LIBRARIES})
+
+add_executable(03_contain src/03_contain.cpp)
+target_link_libraries(03_contain ${PCL_LIBRARIES})
