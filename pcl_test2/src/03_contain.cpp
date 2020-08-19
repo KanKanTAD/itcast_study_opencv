@@ -1,4 +1,3 @@
-#include <Eigen/src/Core/Matrix.h>
 #include <pcl/features/moment_of_inertia_estimation.h>
 #include <pcl/pcl_macros.h>
 #include <pcl/visualization/pcl_visualizer.h>
