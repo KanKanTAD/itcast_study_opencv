@@ -1,11 +1,19 @@
 #pragma once
 
+#include <ctype.h>
+#include <qobject.h>
+
 #include <QString>
 #include <QTcpSocket>
+#include <algorithm>
 #include <atomic>
+#include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -13,6 +21,7 @@
 #include "utils.hpp"
 
 union URData {
+    std::uint8_t _data[1108];
     struct {
         int MsgSize;  // 121
         double Time;
@@ -56,10 +65,21 @@ union URData {
         double Elbow_position[3];
         double Elbow_velocity[3];
     };
+    URData() = default;
+
+    URData(const QByteArray& data) {
+        size_t sz = std::min(sizeof(*this), (size_t)data.size());
+        memcpy(this, data.data(), sz);
+        this->MsgSize   = utils::reverse_value(this->MsgSize);
+        std::uint8_t* p = &(_data[0]);
+        for (std::uint8_t* q = p + 4; q < p + 1108 - 8; q += 8) {
+            utils::reverse_byte(q, 8);
+        }
+    }
 };
 
 //枚举
-enum MOVETYPE { MOVEJ, MOVEL };
+enum MOVETYPE { MOVEJ, MOVEL, STOP };
 
 //指令结构体
 struct Instruction {
@@ -67,9 +87,26 @@ struct Instruction {
     double data[6];
     double a;
     double v;
+
+    Instruction() = default;
+    Instruction(MOVETYPE t, double (&d)[6], double a, double v)
+        : movetype{t}, a{a}, v{v} {
+        memcpy(data, d, sizeof(double) * 6);
+    }
+
+    bool close_with(URData& ur_data, float epsilon = 0.018) {
+        if (movetype == MOVETYPE::MOVEJ) {
+            return std::abs(utils::variance(data, ur_data.q_actual)) <= epsilon;
+        } else if (movetype == MOVETYPE::MOVEL) {
+            return std::abs(utils::variance(
+                       data, ur_data.Tool_vector_actual)) <= epsilon;
+        } else {
+            return true;
+        }
+    }
 };
 
-struct URDriver {
+struct URDriver : public QObject {
     std::function<void()> connect_callback_func;
     std::function<void()> disconnect_callback_func;
 
@@ -98,20 +135,77 @@ struct URDriver {
         return __is_connected;
     }
 
-    void write_to_robot(const QString& cmd) {
+    void movej(double (&joints)[6], double a = 0.1, double v = 0.1) {
+        this->__queue.push(Instruction{MOVETYPE::MOVEJ, joints, a, v});
+    }
+
+    void movel(double (&pose)[6], double a = 0.1, double v = 0.1) {
+        this->__queue.push({MOVETYPE::MOVEL, pose, a, v});
+    }
+
+    void stop_all() {
+        while (this->__queue.empty() == false) {
+            this->__queue.pop();
+        }
+        this->__is_doing = false;
+    }
+
+    void do_cmd_at_once(Instruction& ins) {
+        std::cout << "do_cmd_at_once!" << std::endl;
+        if (ins.movetype == MOVETYPE::MOVEJ) {
+            this->movej_at_once(*utils::arr2vec(__queue.front().data),
+                                __queue.front().a,
+                                __queue.front().v);
+
+        } else if (ins.movetype == MOVETYPE::MOVEL) {
+            this->movel_at_once(*utils::arr2vec(__queue.front().data),
+                                __queue.front().a,
+                                __queue.front().v);
+        }
+    }
+
+    void write_to_robot_at_once(const QString& cmd) {
         if (!__is_connected) {
             return;
         }
+        std::cout << __func__ << ";" << __LINE__ << std::endl;
+        std::cout << cmd.toStdString() << std::endl;
         socket.write(cmd.toUtf8());
     }
 
-    void movej(std::vector<double>& joints, double a = 0.1, double v = 0.1) {
+    void movej_at_once(std::vector<double>& joints,
+                       double a = 0.1,
+                       double v = 0.1) {
+        write_to_robot_at_once(QString::fromStdString(movej_str(joints, a, v)));
+    }
+
+    std::string movej_str(std::vector<double>& joints,
+                          double a = 0.1,
+                          double v = 0.1) {
         std::stringstream ss;
-        ss << "movej([" << utils::joint(",", joints) << "],a=" << a
-           << ",v=" << v << "t=1"
-           << "c=1"
+        ss << "movej([" << utils::joint(",", joints).toStdString()
+           << "],a=" << a << ",v=" << v << ",t=0,r=0)"
            << "\n"
            << std::endl;
+
+        return ss.str();
+    }
+
+    void movel_at_once(std::vector<double>& pose,
+                       double a = 0.1,
+                       double v = 0.1) {
+        write_to_robot_at_once(QString::fromStdString(movel_str(pose, a, v)));
+    }
+
+    std::string movel_str(std::vector<double>& pose,
+                          double a = 0.1,
+                          double v = 0.1) {
+        std::stringstream ss;
+        ss << "movel(p[" << utils::joint(",", pose).toStdString() << "],a=" << a
+           << ",v=" << v << ",t=0,r=0)"
+           << "\n"
+           << std::endl;
+        return ss.str();
     }
 
       private:
@@ -126,12 +220,45 @@ struct URDriver {
             this->disconnect_callback_func();
         });
 
-        // QObject::connect(&this->socket,&QTcpSocket::
+        QObject::connect(&this->socket,
+                         &QTcpSocket::readyRead,
+                         this,
+                         &URDriver::readyRead_callback);
     }
     URDriver(const URDriver&) = delete;
     URDriver& operator=(const URDriver&) = delete;
 
+      protected:
+    void do_next_cmd(URData& ur_data) {
+        if (this->__queue.empty()) {
+            __is_doing = false;
+            return;
+        }
+        if (__is_doing == false) {
+            this->do_cmd_at_once(this->__queue.front());
+            __is_doing = true;
+            return;
+        }
+
+        if (__is_doing == true) {
+            if (this->__queue.front().close_with(ur_data)) {
+                __is_doing = false;
+                this->__queue.pop();
+            }
+        }
+    }
+
+    void readyRead_callback() {
+        QByteArray data = socket.readAll();
+        URData ur_data{data};
+        do_next_cmd(ur_data);
+    }
+
+      private:
     QTcpSocket socket;
 
     std::atomic_bool __is_connected{false};
+    std::atomic_bool __is_doing{false};
+
+    std::queue<Instruction> __queue;
 };

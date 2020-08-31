@@ -1,7 +1,5 @@
 #pragma once
 
-#include <qpushbutton.h>
-
 #include <QGridLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -20,6 +18,9 @@ class MainWindow : public QWidget {
     }
 
       private:
+    int paintor_width  = 500;
+    int paintor_height = 400;
+
     QGridLayout main_layout{this};
     QLineEdit ip_edit;
     QLineEdit port_edit;
@@ -29,8 +30,24 @@ class MainWindow : public QWidget {
     QPushButton connect_btn{"connect"};
     QPushButton disconnect_btn{"disconnect"};
 
+	QLineEdit origin_edit;
+    QLineEdit x_axes_edit;
+    QLineEdit y_axes_edit;
+    QLineEdit rx_ry_rz;
+
     Paintor paintor;
 
     QPushButton paint_btn{"paint"};
+    QPushButton stop_btn{"stop"};
     QPushButton clean_btn{"clean"};
+
+    QLineEdit pose_edits[6];
+
+	QLineEdit a_edit;
+	QLineEdit v_edit;
+
+    QPushButton test_movel_btn{"test move line"};
+
+      protected slots:
+    void do_paint();
 };

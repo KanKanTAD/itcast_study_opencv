@@ -14,11 +14,11 @@
 #include <vector>
 
 struct point2d_t {
-    float x, y;
+    double x, y;
 
     point2d_t(int x, int y) : x{(float)x}, y{(float)y} {
     }
-    point2d_t(float x, float y) : x{x}, y{y} {
+    point2d_t(double x, double y) : x{x}, y{y} {
     }
     point2d_t() : point2d_t(0.f, 0.f) {
     }
@@ -32,6 +32,28 @@ struct point2d_t {
 
     QPoint to_qpoint() {
         return QPoint(int_x(), int_y());
+    }
+
+    void normalize(const point2d_t& mi, const point2d_t& mx) {
+        auto delta_x = mx.x - mi.x;
+        auto delta_y = mx.y - mi.y;
+        x            = (x - mi.x) / delta_x;
+        y            = (y - mi.y) / delta_y;
+    }
+
+    static void min_max(std::vector<point2d_t>& pts,
+                        double& min_x,
+                        double& min_y,
+                        double& max_x,
+                        double& max_y) {
+    }
+
+    static void normalize(std::vector<point2d_t>& pts,
+                          const point2d_t& mi,
+                          const point2d_t& mx) {
+        for (auto& pt : pts) {
+            pt.normalize(mi, mx);
+        }
     }
 };
 
