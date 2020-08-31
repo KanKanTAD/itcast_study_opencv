@@ -3,6 +3,9 @@
 #include <qobject.h>
 
 #include <iostream>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 #include <string>
 
 #include "URDriver.hpp"
@@ -33,11 +36,11 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
     main_layout.addWidget(&this->pt_step_edit, 3, 3);
 
     main_layout.addWidget(new QLabel{"x axes:"}, 4, 0);
-    this->x_axes_edit.setText("3");
+    this->x_axes_edit.setText("0.4");
     main_layout.addWidget(&this->x_axes_edit, 4, 1);
 
     main_layout.addWidget(new QLabel{"y axes:"}, 4, 2);
-    this->y_axes_edit.setText("3");
+    this->y_axes_edit.setText("0.2");
     main_layout.addWidget(&this->y_axes_edit, 4, 3);
 
     main_layout.addWidget(new QLabel{"rx ry rz:"}, 5, 0);
@@ -98,7 +101,21 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
     });
 
     QObject::connect(&this->preview_btn, &QPushButton::clicked, [this]() {
+        cv::Mat mt{
+            cv::Mat::zeros(this->paintor_height, this->paintor_width, CV_8UC1)};
 
+        auto muti_pts =
+            paintor.load_muti_pts(utils::stoi(this->pt_step_edit.text()));
+        for (auto& pts : *muti_pts) {
+            for (int i = 1; i < pts.size(); ++i) {
+                cv::line(mt,
+                         {pts[i - 1].int_x(), pts[i - 1].int_y()},
+                         {pts[i].int_x(), pts[i].int_y()},
+                         cv::Scalar::all(255.0));
+            }
+        }
+        cv::imshow("info", mt);
+        cv::waitKey(0);
     });
     QObject::connect(&this->test_movel_btn, &QPushButton::clicked, [this]() {
         std::cout << "do test_movel_btn" << std::endl;

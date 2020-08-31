@@ -74,7 +74,12 @@ struct URData {
     URData() = default;
 
     URData(const QByteArray& data) {
-        size_t sz = std::min(sizeof(*this), (size_t)data.size());
+        size_t this_size = sizeof(*this);
+        size_t data_size = data.size();
+        if (data_size < this_size) {
+            std::cerr << " data.size() < sizeof(URData) !" << std::endl;
+        }
+        size_t sz = std::min(this_size, data_size);
         memcpy(this, data.data(), sz);
         MsgSize = utils::reverse_value(MsgSize);
         for (double& v : double_arr) {
@@ -199,7 +204,6 @@ struct URDriver : public QObject {
         return ss.str();
     }
 
-    cout << "sizeof(URData):" << sizeof(URData) << endl;
     void movel_at_once(std::vector<double>& pose,
                        double a = 0.1,
                        double v = 0.1) {
