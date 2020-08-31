@@ -3,4 +3,6 @@
 **/.clangd
 .vim
 **/.vim
+/URDriverCpp/3rdparty/
+**/.idea
 

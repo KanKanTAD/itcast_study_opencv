@@ -1,0 +1,70 @@
+{
+	"BUILD_DIR" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test/test_autogen",
+	"CMAKE_BINARY_DIR" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug",
+	"CMAKE_CURRENT_BINARY_DIR" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test",
+	"CMAKE_CURRENT_SOURCE_DIR" : "/home/wt/workspace/robotdriver/URDriverCpp/src/test",
+	"CMAKE_EXECUTABLE" : "/home/wt/soft/clion-2020.1.1/bin/cmake/linux/bin/cmake",
+	"CMAKE_SOURCE_DIR" : "/home/wt/workspace/robotdriver/URDriverCpp",
+	"HEADERS" : [],
+	"HEADER_EXTENSIONS" : [ "h", "hh", "h++", "hm", "hpp", "hxx", "in", "txx" ],
+	"INCLUDE_DIR" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test/test_autogen/include",
+	"MOC_COMPILATION_FILE" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test/test_autogen/mocs_compilation.cpp",
+	"MOC_DEFINITIONS" : 
+	[
+		"QT_CORE_LIB",
+		"QT_GUI_LIB",
+		"QT_NETWORK_LIB",
+		"QT_OPENGL_LIB",
+		"QT_WIDGETS_LIB"
+	],
+	"MOC_DEPEND_FILTERS" : 
+	[
+		[
+			"Q_PLUGIN_METADATA",
+			"[\n][ \t]*Q_PLUGIN_METADATA[ \t]*\\([^\\)]*FILE[ \t]*\"([^\"]+)\""
+		]
+	],
+	"MOC_INCLUDES" : 
+	[
+		"/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test",
+		"/home/wt/workspace/robotdriver/URDriverCpp/src/test",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/include",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/include/QtCore",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/mkspecs/linux-g++",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/include/QtGui",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/include/QtWidgets",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/include/QtNetwork",
+		"/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/include/QtOpenGL",
+		"/usr/include",
+		"/usr/include/c++/7",
+		"/usr/include/x86_64-linux-gnu/c++/7",
+		"/usr/include/c++/7/backward",
+		"/usr/lib/gcc/x86_64-linux-gnu/7/include",
+		"/usr/local/include",
+		"/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed",
+		"/usr/include/x86_64-linux-gnu"
+	],
+	"MOC_MACRO_NAMES" : [ "Q_OBJECT", "Q_GADGET", "Q_NAMESPACE" ],
+	"MOC_OPTIONS" : [],
+	"MOC_PATH_PREFIX" : true,
+	"MOC_PREDEFS_CMD" : [],
+	"MOC_PREDEFS_FILE" : "",
+	"MOC_RELAXED_MODE" : false,
+	"MOC_SKIP" : [],
+	"MULTI_CONFIG" : false,
+	"PARALLEL" : 4,
+	"PARSE_CACHE_FILE" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test/CMakeFiles/test_autogen.dir/ParseCache.txt",
+	"QT_MOC_EXECUTABLE" : "/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/bin/moc",
+	"QT_UIC_EXECUTABLE" : "/home/wt/workspace/robotdriver/URDriverCpp/3rdparty/qt/bin/uic",
+	"QT_VERSION_MAJOR" : 5,
+	"SETTINGS_FILE" : "/home/wt/workspace/robotdriver/URDriverCpp/cmake-build-debug/src/test/CMakeFiles/test_autogen.dir/AutogenUsed.txt",
+	"SOURCES" : 
+	[
+		[ "/home/wt/workspace/robotdriver/URDriverCpp/src/test/main.cpp", "MU" ]
+	],
+	"UIC_OPTIONS" : [],
+	"UIC_SEARCH_PATHS" : [],
+	"UIC_SKIP" : [],
+	"UIC_UI_FILES" : [],
+	"VERBOSITY" : 0
+}
