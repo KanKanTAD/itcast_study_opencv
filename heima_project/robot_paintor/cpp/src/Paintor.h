@@ -11,6 +11,7 @@
 #include <atomic>
 #include <cmath>
 #include <memory>
+#include <string>
 #include <vector>
 
 struct point2d_t {
@@ -23,10 +24,14 @@ struct point2d_t {
     point2d_t() : point2d_t(0.f, 0.f) {
     }
 
-    int int_x() {
+    std::string str() const {
+        return "{ x:" + std::to_string(x) + ", y:" + std::to_string(y) + " }";
+    }
+
+    int int_x() const {
         return int(std::roundf(x));
     }
-    int int_y() {
+    int int_y() const {
         return int(std::roundf(y));
     }
 

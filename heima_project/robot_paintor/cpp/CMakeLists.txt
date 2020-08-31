@@ -27,7 +27,13 @@ include_directories(${OpenCV_INCLUDE_DIRS})
  
 add_executable(main src/main.cpp src/MainWindow.cpp src/Paintor.cpp)
 
+add_executable(simple_test src/test.cpp src/Paintor.cpp)
+
 target_link_libraries(main
+	${OpenCV_LIBS}
+	${qt5_libs}
+)
+target_link_libraries(simple_test
 	${OpenCV_LIBS}
 	${qt5_libs}
 )

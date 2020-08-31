@@ -30,7 +30,7 @@ class MainWindow : public QWidget {
     QPushButton connect_btn{"connect"};
     QPushButton disconnect_btn{"disconnect"};
 
-	QLineEdit origin_edit;
+    QLineEdit origin_edit;
     QLineEdit x_axes_edit;
     QLineEdit y_axes_edit;
     QLineEdit rx_ry_rz;
@@ -39,12 +39,17 @@ class MainWindow : public QWidget {
 
     QPushButton paint_btn{"paint"};
     QPushButton stop_btn{"stop"};
+    QPushButton preview_btn{"preview"};
     QPushButton clean_btn{"clean"};
 
     QLineEdit pose_edits[6];
+    QLabel pose_labels[6];
 
-	QLineEdit a_edit;
-	QLineEdit v_edit;
+    QLineEdit pt_step_edit;
+
+    QLineEdit a_edit;
+    QLineEdit v_edit;
+    QLineEdit epsilon_edit;
 
     QPushButton test_movel_btn{"test move line"};
 

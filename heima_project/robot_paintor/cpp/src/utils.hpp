@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -22,19 +23,21 @@ std::shared_ptr<std::vector<double>> arr2vec(double (&arr)[n]) {
 }
 
 double stod(const std::string& s, double default_ = 0) {
-    int res = default_;
+    auto res = default_;
     try {
         res = std::stod(s);
     } catch (std::exception& e) {
+        res = default_;
     }
     return res;
 }
 
 int stoi(const QString& s, int default_ = 0) {
-    int res = default_;
+    auto res = default_;
     try {
         res = std::stoi(s.toStdString());
     } catch (std::exception& e) {
+        res = default_;
     }
     return res;
 }
@@ -51,7 +54,8 @@ void vector2array(std::vector<T> vec, T (&arr)[n]) {
     }
 }
 
-void reverse_byte(std::uint8_t* begin, size_t sz) {
+inline void reverse_byte(std::uint8_t* begin, size_t sz) {
+    // std::reverse(begin, begin + sz);
     for (int i = 0; i < sz / 2; ++i) {
         std::uint8_t t    = begin[i];
         begin[i]          = begin[sz - i - 1];
@@ -109,6 +113,18 @@ T variance(T (&a)[n], T* b) {
         res += t * t;
     }
     res /= n;
+    return res;
+}
+
+template <typename T, size_t n>
+T eular_distance(T (&a)[n], T* b) {
+    T res = (T)(0);
+
+    for (int i = 0; i < n; ++i) {
+        auto t = a[i] - b[i];
+        res += t * t;
+    }
+    res = (T)std::sqrt((double)res);
     return res;
 }
 
