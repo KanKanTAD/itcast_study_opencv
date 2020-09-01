@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include <qlabel.h>
 #include <qobject.h>
 
 #include <iostream>
@@ -17,7 +18,7 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
     this->ip_edit.setText("192.168.36.26");
     main_layout.addWidget(&this->ip_edit, 0, 1);
     main_layout.addWidget(new QLabel{"port"}, 0, 2);
-    this->port_edit.setText("30002");
+    this->port_edit.setText("30003");
     main_layout.addWidget(&this->port_edit, 0, 3);
 
     this->state_label.setText("have no connected");
@@ -66,6 +67,10 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
     this->a_edit.setText("0.12");
     main_layout.addWidget(&this->a_edit, 8 + 6, 1);
 
+    main_layout.addWidget(new QLabel{"z coef:"}, 8 + 6, 2);
+    this->coef_z_edit.setText("1.5");
+    main_layout.addWidget(&this->coef_z_edit, 8 + 6, 3);
+
     main_layout.addWidget(new QLabel{"v:"}, 9 + 6, 0);
     this->v_edit.setText("0.25");
     main_layout.addWidget(&this->v_edit, 9 + 6, 1);
@@ -100,23 +105,8 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
         URDriver::get_instance().stop_all();
     });
 
-    QObject::connect(&this->preview_btn, &QPushButton::clicked, [this]() {
-        cv::Mat mt{
-            cv::Mat::zeros(this->paintor_height, this->paintor_width, CV_8UC1)};
-
-        auto muti_pts =
-            paintor.load_muti_pts(utils::stoi(this->pt_step_edit.text()));
-        for (auto& pts : *muti_pts) {
-            for (int i = 1; i < pts.size(); ++i) {
-                cv::line(mt,
-                         {pts[i - 1].int_x(), pts[i - 1].int_y()},
-                         {pts[i].int_x(), pts[i].int_y()},
-                         cv::Scalar::all(255.0));
-            }
-        }
-        cv::imshow("info", mt);
-        cv::waitKey(0);
-    });
+    QObject::connect(
+        &this->preview_btn, SIGNAL(clicked()), this, SLOT(preview()));
     QObject::connect(&this->test_movel_btn, &QPushButton::clicked, [this]() {
         std::cout << "do test_movel_btn" << std::endl;
         auto a = utils::stod(this->a_edit.text().toStdString(), 0.012);
@@ -142,8 +132,14 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
 
     URDriver::get_instance().readyread_callback_func =
         [this](URData& ur_data) -> void {
+        char buf[1024];
         for (int i = 0; i < 6; ++i) {
-            this->pose_labels->setText(
+            // memset(buf, 0, 1024);
+            // sprintf(buf, "%.6f", ur_data.Tool_vector_actual[i]);
+            // this->pose_labels[i].setText(buf);
+            // this->pose_labels[i].setText(QString::fromStdString(
+            // std::to_string(ur_data.Tool_vector_actual[i])));
+            this->pose_labels[i].setText(
                 QString::number(ur_data.Tool_vector_actual[i]));
         }
     };
@@ -182,6 +178,8 @@ void MainWindow::do_paint() {
 
     int pt_step = utils::stoi(this->pt_step_edit.text(), 10);
 
+    auto z_coef = utils::stod(this->coef_z_edit.text().toStdString(), 1.3);
+
     auto muti_pts = this->paintor.load_muti_pts(pt_step);
 
     for (auto& pts : *muti_pts) {
@@ -202,7 +200,7 @@ void MainWindow::do_paint() {
             }
             double t[6] = {(x_len * pts.back().x + double_ori->at(0)),
                            (y_len * pts.back().y + double_ori->at(1)),
-                           double_ori->at(2) * 1.3,
+                           double_ori->at(2) * z_coef,
                            double_rs->at(0),
                            double_rs->at(1),
                            double_rs->at(2)};
@@ -211,4 +209,24 @@ void MainWindow::do_paint() {
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
     }
+}
+
+void MainWindow::preview() {
+    new std::thread([this]() {
+        cv::Mat mt{
+            cv::Mat::zeros(this->paintor_height, this->paintor_width, CV_8UC1)};
+
+        auto muti_pts =
+            paintor.load_muti_pts(utils::stoi(this->pt_step_edit.text()));
+        for (auto& pts : *muti_pts) {
+            for (int i = 1; i < pts.size(); ++i) {
+                cv::line(mt,
+                         {pts[i - 1].int_x(), pts[i - 1].int_y()},
+                         {pts[i].int_x(), pts[i].int_y()},
+                         cv::Scalar::all(255.0));
+            }
+        }
+        cv::imshow("info", mt);
+        // std::cout << "out preview" << std::endl;
+    });
 }

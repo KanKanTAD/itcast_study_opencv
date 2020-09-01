@@ -3,6 +3,7 @@
 #include <QString>
 #include <algorithm>
 #include <cmath>
+#include <complex>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -64,12 +65,13 @@ inline void reverse_byte(std::uint8_t* begin, size_t sz) {
 }
 
 template <typename T>
-T reverse_value(T value) {
+inline T reverse_value(T value) {
     const size_t sz = {sizeof(value)};
     std::uint8_t buff[sz];
     memcpy(buff, &value, sz);
-    std::reverse(std::begin(buff), std::end(buff));
-    return *((T*)buff);
+    reverse_byte(buff, sz);
+    memcpy(&value, buff, sz);
+    return value;
 }
 
 template <typename T>
@@ -104,25 +106,50 @@ std::shared_ptr<std::vector<double>> strs2doubles(
     return res;
 }
 
+inline float ang_distance(float d1, float d2) {
+    std::complex<float> c1{0, d1};
+    c1 = 1.0f * std::exp(c1);
+    std::complex<float> c2{0, d2};
+    c2 = 1.0f * std::exp(c2);
+    return std::abs(std::log(c1 / c2));
+}
+
+inline float movel_error(double (&a)[6], double* b) {
+    float x = 0.0f;
+    for (int i = 0; i < 3; i++) {
+        x += std::pow(a[i] - b[i], 2);
+    }
+    x       = std::sqrt(x);
+    float y = 0.0f;
+    for (int i = 3; i < 6; i++) {
+        y += ang_distance(a[i], b[i]);
+    }
+    y /= 3.0f;
+    return (x + y) / 2.0f;
+}
+
 template <typename T, size_t n>
-T variance(T (&a)[n], T* b) {
+inline T variance(T (&a)[n], T* b) {
     T res = (T)(0);
 
     for (int i = 0; i < n; ++i) {
-        auto t = a[i] - b[i];
-        res += t * t;
+        res += std::pow(double(a[i] - b[i]), 2);
     }
-    res /= n;
+    res /= double(n);
     return res;
 }
 
 template <typename T, size_t n>
-T eular_distance(T (&a)[n], T* b) {
+inline T std_var(T (&a)[n], T* b) {
+    return std::sqrt((double)(variance(a, b)));
+}
+
+template <typename T, size_t n>
+inline T eular_distance(T (&a)[n], T* b) {
     T res = (T)(0);
 
     for (int i = 0; i < n; ++i) {
-        auto t = a[i] - b[i];
-        res += t * t;
+        res += std::pow(double(a[i] - b[i]), 2);
     }
     res = (T)std::sqrt((double)res);
     return res;

@@ -25,8 +25,7 @@
 struct URData {
     int MsgSize;  // 121
     union {
-        double double_arr[1 + 6 * 5 + 6 * 4 + 6 * 6 + 1 + 3 + 6 + 1 + 6 + 3 +
-                          6 + 7 + 6 + 1 + 1 + 2 * 3];
+        double double_arr[1108 - 4];
         struct {
             double Time;
             double q_target[6];
@@ -73,16 +72,11 @@ struct URData {
 
     URData() = default;
 
-    URData(const QByteArray& data) {
-        size_t this_size = sizeof(*this);
-        size_t data_size = data.size();
-        if (data_size < this_size) {
-            std::cerr << " data.size() < sizeof(URData) !" << std::endl;
-        }
-        size_t sz = std::min(this_size, data_size);
-        memcpy(this, data.data(), sz);
+    URData(QByteArray& data) {
+        memcpy(&this->MsgSize, data.data(), 4);
         MsgSize = utils::reverse_value(MsgSize);
-        for (double& v : double_arr) {
+        memcpy(this->double_arr, data.data() + 4, sizeof(this->double_arr));
+        for (double& v : this->double_arr) {
             v = utils::reverse_value(v);
         }
     }
@@ -105,15 +99,22 @@ struct Instruction {
     }
 
     bool close_with(URData& ur_data, float epsilon = 0.0018) {
-        auto res = false;
+        double res = epsilon;
         if (movetype == MOVETYPE::MOVEJ) {
-            res = utils::eular_distance(data, ur_data.q_actual) <= epsilon;
+            res = utils::eular_distance(data, ur_data.q_actual);
         } else if (movetype == MOVETYPE::MOVEL) {
-            res = utils::variance(data, ur_data.Tool_vector_actual) <= epsilon;
+            std::cout << "target to->";
+            for (int i = 0; i < 6; i++) {
+                std::cout << data[i] << " ,";
+            }
+
+            res = utils::movel_error(data, ur_data.Tool_vector_actual);
         } else {
-            res = true;
+            return true;
         }
-        return res;
+        std::cout << "error: " << res << " <--> epsilon:" << epsilon
+                  << std::endl;
+        return res <= epsilon;
     }
 };
 

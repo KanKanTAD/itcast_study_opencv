@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <thread>
 
 #include "Paintor.h"
 
@@ -51,8 +52,11 @@ class MainWindow : public QWidget {
     QLineEdit v_edit;
     QLineEdit epsilon_edit;
 
+    QLineEdit coef_z_edit;
+
     QPushButton test_movel_btn{"test move line"};
 
       protected slots:
     void do_paint();
+	  void preview();
 };

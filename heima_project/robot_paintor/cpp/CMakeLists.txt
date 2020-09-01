@@ -32,10 +32,12 @@ add_executable(simple_test src/test.cpp src/Paintor.cpp)
 target_link_libraries(main
 	${OpenCV_LIBS}
 	${qt5_libs}
+	-lpthread -lm
 )
 target_link_libraries(simple_test
 	${OpenCV_LIBS}
 	${qt5_libs}
+	-lpthread -lm
 )
 
 
