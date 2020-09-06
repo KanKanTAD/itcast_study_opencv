@@ -88,15 +88,6 @@ QString joint(const QString& delim, std::vector<T>& vec) {
     return QString::fromStdString(ss.str());
 }
 
-std::shared_ptr<std::vector<std::string>> split(const std::string& s,
-                                                const std::string& pat = ",") {
-    std::regex reg{pat};
-    auto* vk = new std::vector<std::string>{
-        std::sregex_token_iterator{s.begin(), s.end(), reg, -1},
-        std::sregex_token_iterator{}};
-    return std::shared_ptr<std::vector<std::string>>{vk};
-}
-
 std::shared_ptr<std::vector<double>> strs2doubles(
     std::vector<std::string>& strs) {
     std::shared_ptr<std::vector<double>> res{new std::vector<double>{}};

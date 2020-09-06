@@ -39,6 +39,108 @@ inline cv::Point2i pntf2pnti(const cv::Point2f& pnt) {
     return cv::Point2i{round(pnt.x), round(pnt.y)};
 }
 
+inline std::shared_ptr<std::vector<std::vector<cv::Point2i>>> wayf2wayi(
+    std::vector<std::vector<cv::Point2f>>& ways) {
+    std::shared_ptr<std::vector<std::vector<cv::Point2i>>> res{
+        new std::vector<std::vector<cv::Point2i>>{}};
+
+    for (auto& way : ways) {
+        res->push_back(std::vector<cv::Point2i>{});
+        for (auto& pt : way) {
+            res->back().push_back(pntf2pnti(pt));
+        }
+    }
+    return res;
+}
+
+inline float _min_y_from_ways(std::vector<std::vector<cv::Point2f>>& ways) {
+    std::vector<float> temp;
+    for (auto& w : ways) {
+        temp.push_back(
+            std::min_element(w.begin(),
+                             w.end(),
+                             [](const cv::Point2f& a, const cv::Point2f& b) {
+                                 return a.y < b.y;
+                             })
+                ->y);
+    }
+    return *std::max_element(temp.begin(), temp.end());
+}
+inline float _min_x_from_ways(std::vector<std::vector<cv::Point2f>>& ways) {
+    std::vector<float> temp;
+    for (auto& w : ways) {
+        temp.push_back(
+            std::min_element(w.begin(),
+                             w.end(),
+                             [](const cv::Point2f& a, const cv::Point2f& b) {
+                                 return a.x < b.x;
+                             })
+                ->x);
+    }
+    return *std::max_element(temp.begin(), temp.end());
+}
+inline float _max_y_from_ways(std::vector<std::vector<cv::Point2f>>& ways) {
+    std::vector<float> temp;
+    for (auto& w : ways) {
+        temp.push_back(
+            std::max_element(w.begin(),
+                             w.end(),
+                             [](const cv::Point2f& a, const cv::Point2f& b) {
+                                 return a.y < b.y;
+                             })
+                ->y);
+    }
+    return *std::max_element(temp.begin(), temp.end());
+}
+inline float _max_x_from_ways(std::vector<std::vector<cv::Point2f>>& ways) {
+    std::vector<float> temp;
+    for (auto& w : ways) {
+        temp.push_back(
+            std::max_element(w.begin(),
+                             w.end(),
+                             [](const cv::Point2f& a, const cv::Point2f& b) {
+                                 return a.x < b.x;
+                             })
+                ->x);
+    }
+    return *std::max_element(temp.begin(), temp.end());
+}
+inline cv::Point2f _max_from_ways(std::vector<std::vector<cv::Point2f>>& ways) {
+    return cv::Point2f{_max_x_from_ways(ways), _max_y_from_ways(ways)};
+}
+
+inline cv::Point2f _min_from_ways(std::vector<std::vector<cv::Point2f>>& ways) {
+    return cv::Point2f{_min_x_from_ways(ways), _min_y_from_ways(ways)};
+}
+
+inline void _normalize(cv::Point2f& pt,
+                       const cv::Point2f& max_p,
+                       const cv::Point2f& min_p) {
+    pt.x = (pt.x - min_p.x) / (max_p.x - min_p.x);
+    pt.y = (pt.y - min_p.y) / (max_p.y - min_p.y);
+}
+
+inline void _normalize(std::vector<std::vector<cv::Point2f>>& ways) {
+    auto max_p = _max_from_ways(ways);
+    auto min_p = _min_from_ways(ways);
+    for (auto& way : ways) {
+        for (auto& w : way) {
+            _normalize(w, max_p, min_p);
+        }
+    }
+}
+
+inline void _extendto(std::vector<std::vector<cv::Point2f>>& ways,
+                      float width,
+                      float height) {
+    for (auto& way : ways) {
+        for (auto& w : way) {
+            w.x *= width;
+            w.y *= height;
+        }
+    }
+}
+
 inline void setpntf(cv::Point2f& pntf, std::vector<float>& pt) {
     assert(pt.size() >= 2);
     pntf.x = pt.at(0);
@@ -180,16 +282,16 @@ inline std::shared_ptr<std::vector<float>> split_to_floats(
 
 static std::map<std::string,
                 std::function<bool(cv::Point2f&,
-                                   std::vector<std::vector<cv::Point2i>>&,
+                                   std::vector<std::vector<cv::Point2f>>&,
                                    const std::vector<std::string>&,
                                    int&)>>
     __handle_mapper__{
         {"m",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
-             ways.push_back(std::vector<cv::Point2i>{});
+             ways.push_back(std::vector<cv::Point2f>{});
              ++i;
              if (i >= pathd.size()) {
                  return false;
@@ -203,10 +305,10 @@ static std::map<std::string,
          }},
         {"M",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
-             ways.push_back(std::vector<cv::Point2i>{});
+             ways.push_back(std::vector<cv::Point2f>{});
              ++i;
 
              if (i >= pathd.size()) {
@@ -220,7 +322,7 @@ static std::map<std::string,
          }},
         {"l",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ++i;
@@ -236,7 +338,7 @@ static std::map<std::string,
          }},
         {"L",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ++i;
@@ -251,7 +353,7 @@ static std::map<std::string,
          }},
         {"h",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ++i;
@@ -266,7 +368,7 @@ static std::map<std::string,
          }},
         {"H",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ++i;
@@ -281,7 +383,7 @@ static std::map<std::string,
          }},
         {"v",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ++i;
@@ -296,7 +398,7 @@ static std::map<std::string,
          }},
         {"V",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ++i;
@@ -311,7 +413,7 @@ static std::map<std::string,
          }},
         {"c",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              cv::Point2f b = prev_pt;
@@ -341,7 +443,7 @@ static std::map<std::string,
          }},
         {"C",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              cv::Point2f b = prev_pt;
@@ -374,7 +476,7 @@ static std::map<std::string,
          }},
         {"z",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ways.back().push_back(ways.back().front());
@@ -384,7 +486,7 @@ static std::map<std::string,
          }},
         {"Z",
          [](cv::Point2f& prev_pt,
-            std::vector<std::vector<cv::Point2i>>& ways,
+            std::vector<std::vector<cv::Point2f>>& ways,
             const std::vector<std::string>& pathd,
             int& i) -> bool {
              ways.back().push_back(ways.back().front());
@@ -394,7 +496,7 @@ static std::map<std::string,
          }}};
 
 void get_way_from_pathd(std::vector<std::string>& pathd,
-                        std::vector<std::vector<cv::Point2i>>& ways) {
+                        std::vector<std::vector<cv::Point2f>>& ways) {
     print_line;
 
     auto prev_func_it = __handle_mapper__.begin();
@@ -416,12 +518,12 @@ void get_way_from_pathd(std::vector<std::string>& pathd,
     }
 }
 
-std::shared_ptr<std::vector<std::vector<cv::Point2i>>> get_ways_form_paths(
+std::shared_ptr<std::vector<std::vector<cv::Point2f>>> get_ways_form_paths(
     std::vector<boost::property_tree::ptree>& paths) {
     //
     print_line;
-    std::shared_ptr<std::vector<std::vector<cv::Point2i>>> res{
-        new std::vector<std::vector<cv::Point2i>>{}};
+    std::shared_ptr<std::vector<std::vector<cv::Point2f>>> res{
+        new std::vector<std::vector<cv::Point2f>>{}};
     for (auto& pt : paths) {
         auto d     = pt.get<std::string>("<xmlattr>.d");
         auto pathd = split(d);
@@ -434,17 +536,51 @@ std::shared_ptr<std::vector<std::vector<cv::Point2i>>> get_ways_form_paths(
     return res;
 }
 
-std::shared_ptr<std::vector<std::vector<cv::Point2i>>> get_ways_form_svg(
+std::shared_ptr<std::vector<std::vector<cv::Point2f>>> get_ways_form_svg(
     boost::property_tree::ptree& doc) {
     auto paths = get_paths_from_svg(doc);
     return get_ways_form_paths(*paths);
 }
 
-std::shared_ptr<std::vector<std::vector<cv::Point2i>>> get_ways_form_svg(
+std::shared_ptr<std::vector<std::vector<cv::Point2f>>> get_ways_form_svg(
     const std::string& svg_filepath) {
     boost::property_tree::ptree pt;
     boost::property_tree::read_xml(svg_filepath, pt);
     return get_ways_form_svg(pt);
 }
+
+struct svg_to_ways {
+    std::string filepath;
+    boost::property_tree::ptree doc;
+
+    float svg_width, svg_height;
+    float resize_x = 1.0f;
+    float resize_y = 1.0f;
+
+    std::vector<std::vector<std::string>> pathd;
+    std::vector<std::vector<cv::Point2f>> ways;
+
+    svg_to_ways(const std::string& filepath) : filepath{filepath} {
+        boost::property_tree::read_xml(filepath, doc);
+        auto&& sz  = get_size_from_svg(doc);
+        svg_width  = sz.first;
+        svg_height = sz.second;
+    }
+
+    std::vector<std::vector<std::string>>& load_pathd() {
+        pathd.clear();
+        auto paths = get_paths_from_svg(doc);
+        for (auto& ph : *paths) {
+            auto&& d = ph.get<std::string>("<xmlattr>.d");
+            pathd.push_back(*split(d));
+        }
+        return pathd;
+    }
+
+    std::vector<std::vector<cv::Point2f>>& load_ways() {
+        ways.clear();
+
+    }
+};
 
 }  // namespace utils

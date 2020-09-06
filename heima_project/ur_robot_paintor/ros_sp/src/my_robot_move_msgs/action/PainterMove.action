@@ -1,0 +1,18 @@
+string host
+int32 port
+float32 acceleration
+float32 velocity 
+float32 epsilon
+my_robot_move_msgs/Points ways
+
+---
+
+int32 code
+string result
+
+---
+
+my_robot_move_msgs/Point current_pose
+float32 percent
+int32 code
+

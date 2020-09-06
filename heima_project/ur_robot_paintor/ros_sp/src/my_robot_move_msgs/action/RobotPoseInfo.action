@@ -1,0 +1,16 @@
+string host
+int32 port
+
+---
+
+int32 code
+string info
+
+---
+
+int32 code
+string info
+my_robot_move_msgs/Point pose
+
+
+

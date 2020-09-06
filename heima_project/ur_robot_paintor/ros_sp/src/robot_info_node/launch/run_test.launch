@@ -1,0 +1,7 @@
+<launch>
+	<node pkg="robot_info_node" type="test_fst" name="test_node" output="screen"></node>
+</launch>
+
+
+
+

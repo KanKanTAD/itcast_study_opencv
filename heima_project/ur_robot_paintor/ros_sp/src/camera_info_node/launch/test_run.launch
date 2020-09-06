@@ -1,0 +1,5 @@
+<launch>
+	<node pkg="camera_info_node" type="test_node" name="camera_info_node" output="screen"></node>
+	<node pkg="camera_info_node" type="test_listen_node" name="camera_image_listen" output="screen"></node>
+</launch>
+

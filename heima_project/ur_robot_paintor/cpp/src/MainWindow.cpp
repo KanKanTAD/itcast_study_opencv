@@ -8,8 +8,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 #include <string>
+#include <vector>
 
 #include "URDriver.hpp"
+#include "about_svg_utils.hpp"
+#include "src/Paintor.h"
 #include "utils.hpp"
 
 MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
@@ -81,6 +84,9 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
 
     main_layout.addWidget(&this->test_movel_btn, 17, 0, 1, 4);
 
+    main_layout.addWidget(&this->filepath_edit, 18, 0, 1, 3);
+    main_layout.addWidget(&this->paint_svg_btn, 18, 3);
+
     QObject::connect(&this->clean_btn, &QPushButton::clicked, [this]() {
         this->paintor.clear_pts();
     });
@@ -119,6 +125,24 @@ MainWindow::MainWindow(QWidget* ptr) : QWidget(ptr) {
         }
 
         URDriver::get_instance().movel_at_once(pose, a, v);
+    });
+
+    QObject::connect(&this->paint_svg_btn, &QPushButton::clicked, [this]() {
+        auto filepath = utils::load_qstring(
+            this->filepath_edit.text(),
+            "/home/tad/Public/itcast_study_opencv/heima_project/robot_paintor/"
+            "cpp/paint_svg/svg_res/zh.svg");
+        auto ways = utils::get_ways_form_svg(filepath.toStdString());
+        utils::_normalize(*ways);
+        utils::_extendto(*ways, this->paintor_width, this->paintor_height);
+        std::vector<std::vector<point2d_t>> mpts;
+        for (auto& way : *ways) {
+            mpts.push_back(std::vector<point2d_t>{});
+            for (auto& pt : way) {
+                mpts.back().push_back({utils::round(pt.x), utils::round(pt.y)});
+            }
+        }
+        this->paintor.set_pts(mpts);
     });
 
     URDriver::get_instance().disconnect_callback_func =

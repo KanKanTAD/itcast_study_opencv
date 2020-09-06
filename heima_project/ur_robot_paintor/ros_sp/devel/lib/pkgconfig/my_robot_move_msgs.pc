@@ -1,0 +1,8 @@
+prefix=/home/tad/Public/itcast_study_opencv/heima_project/ur_robot_paintor/ros_sp/devel
+
+Name: my_robot_move_msgs
+Description: Description of my_robot_move_msgs
+Version: 0.0.0
+Cflags: -I/home/tad/Public/itcast_study_opencv/heima_project/ur_robot_paintor/ros_sp/devel/include
+Libs: -L${prefix}/lib 
+Requires: message_runtime

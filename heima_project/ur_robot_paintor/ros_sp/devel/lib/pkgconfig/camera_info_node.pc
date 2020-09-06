@@ -1,0 +1,8 @@
+prefix=/home/tad/Public/itcast_study_opencv/heima_project/ur_robot_paintor/ros_sp/devel
+
+Name: camera_info_node
+Description: Description of camera_info_node
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

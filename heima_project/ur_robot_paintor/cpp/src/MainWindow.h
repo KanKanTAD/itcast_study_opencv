@@ -56,7 +56,10 @@ class MainWindow : public QWidget {
 
     QPushButton test_movel_btn{"test move line"};
 
+    QLineEdit filepath_edit;
+    QPushButton paint_svg_btn{"paint svg"};
+
       protected slots:
     void do_paint();
-	  void preview();
+    void preview();
 };

@@ -1,0 +1,19 @@
+float32 ori_x
+float32 ori_y
+float32 ori_z
+float32 tran_z
+
+float32 rx
+float32 ry
+float32 rz
+
+float32 width
+float32 height
+
+float32 svg_width
+float32 svg_height
+string[] svg_pathds
+
+---
+
+my_robot_move_msgs/Points pts

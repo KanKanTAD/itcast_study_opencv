@@ -7,6 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_BUILD_TYPE Debug)
 
 find_package(Qt5 COMPONENTS Core Widgets Gui PrintSupport Network)
 set(qt5_libs

@@ -74,6 +74,11 @@ class Paintor : public QWidget {
         this->update();
     }
 
+    void set_pts(std::vector<std::vector<point2d_t>>& mpts) {
+        this->muti_pts = mpts;
+        this->update();
+    }
+
     std::shared_ptr<std::vector<std::vector<point2d_t>>> load_muti_pts(
         int sample_step = 3);
 

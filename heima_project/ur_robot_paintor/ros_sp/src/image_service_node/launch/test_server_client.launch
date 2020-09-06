@@ -1,0 +1,6 @@
+<launch>
+
+	<node pkg="image_service_node" type="svg_to_ways_server_node" name="svg_to_ways_server_node" ></node>
+	<node pkg="image_service_node" type="svg_to_ways_client_test_node" name="svg_to_ways_client_test_node" ></node>
+
+</launch>
