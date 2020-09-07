@@ -24,7 +24,7 @@ set(qt5_libs
  
 #include_directories(${OpenCV_INCLUDE_DIRS})
  
-add_executable(ur_server src/ur_server.cpp)
+add_executable(ur_server src/ur_server.cpp src/ur_sim_server.cpp)
 add_executable(ur_client_test src/ur_client_test.cpp)
 
 target_link_libraries(ur_server

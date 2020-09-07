@@ -1,9 +1,11 @@
 #include <ros/ros.h>
 
 #include <QApplication>
+#include <chrono>
 #include <string>
+#include <thread>
 
-#include "ros/init.h"
+#include "TestWindow.h"
 
 int main(int argc, char** argv) {
     std::string node_name{"complete_test_node"};
@@ -15,6 +17,15 @@ int main(int argc, char** argv) {
     spinner.start();
 
     QApplication a(argc, argv);
+
+    new std::thread([&]() {
+        while (ros::isShuttingDown() == false) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(120));
+        }
+        a.quit();
+    });
+
+    TestWindow::get_instance().set_node(node);
 
     return a.exec();
 }

@@ -7,6 +7,10 @@ add_compile_options(-std=c++14)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 find_package(Qt5 REQUIRED COMPONENTS Core Gui Widgets Network)
 set(Qt5Libs
 	Qt5::Core
@@ -25,6 +29,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   actionlib
   tf
+  image_transport
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions
@@ -155,6 +161,7 @@ add_executable(svg_to_ways_client_test_node src/svg_to_ways_client_test.cpp)
 add_executable(move_ways_action_server_node src/move_ways_action_server.cpp)
 add_executable(robot_pose_action_server_node src/robot_pose_action_server.cpp)
 add_executable(robot_pose_action_client_test_node src/robot_pose_action_client_test.cpp)
+add_executable(complete_test_node src/complete_test.cpp src/TestWindow.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -196,6 +203,12 @@ target_link_libraries(robot_pose_action_client_test_node
    ${catkin_LIBRARIES}
    ${OpenCV_LIBS}
    ${Boost_LIBRARIES}
+)
+target_link_libraries(complete_test_node
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBS}
+   ${Boost_LIBRARIES}
+   ${Qt5Libs}
 )
 #############
 ## Install ##
