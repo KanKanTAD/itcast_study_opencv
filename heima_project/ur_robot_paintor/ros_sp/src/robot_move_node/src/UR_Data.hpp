@@ -59,20 +59,25 @@ struct URData {
         };
     };
 
+    static void set_by_qbytearray(URData& self, QByteArray& data) {
+        memcpy(&self.MsgSize, data.data(), 4);
+        std::reverse(std::begin(self.msg_size_data),
+                     std::end(self.msg_size_data));
+        memcpy(self.double_byte_data,
+               data.data() + 4,
+               sizeof(self.double_byte_data));
+        for (int i = 0; i < sizeof(self.double_byte_data); i += 8) {
+            for (int j = 0; j < 4; j++) {
+                std::swap(self.double_byte_data[i + j],
+                          self.double_byte_data[i + 7 - j]);
+            }
+        }
+    }
+
     URData() = default;
 
     URData(QByteArray& data) {
-        memcpy(&this->MsgSize, data.data(), 4);
-        std::reverse(std::begin(msg_size_data), std::end(msg_size_data));
-        memcpy(this->double_byte_data,
-               data.data() + 4,
-               sizeof(this->double_byte_data));
-        for (int i = 0; i < sizeof(this->double_byte_data); i += 8) {
-            for (int j = 0; j < 4; j++) {
-                std::swap(this->double_byte_data[i + j],
-                          this->double_byte_data[i + 7 - j]);
-            }
-        }
+        URData::set_by_qbytearray(*this, data);
     }
 
     QByteArray& toQByteArray(QByteArray& data) {

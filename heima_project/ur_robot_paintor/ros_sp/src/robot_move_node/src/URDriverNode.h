@@ -2,14 +2,18 @@
 
 #include <actionlib/server/action_server.h>
 #include <my_robot_move_msgs/PainterMoveAction.h>
-#include <qobjectdefs.h>
 
 #include <QObject>
 #include <QTcpSocket>
 #include <atomic>
+#include <list>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <utility>
 
+#include "MoveURDriver.h"
+#include "UR_Data.hpp"
 #include "actionlib/server/server_goal_handle.h"
 #include "my_robot_move_msgs/Point.h"
 #include "ros/node_handle.h"
@@ -26,11 +30,7 @@ class URDriverNode : public QObject {
     using GoalHandle_t =
         actionlib::ServerGoalHandle<my_robot_move_msgs::PainterMoveAction>;
 
-    GoalHandle_t goal_handle;
-
-    QTcpSocket socket;
-    double curren_pose[6];
-    std::atomic_bool is_running{false};
+    std::list<MoveURDriver::Ptr_t> drivers;
 
     ros::NodeHandle& node;
 
@@ -39,6 +39,7 @@ class URDriverNode : public QObject {
 
       public:
     URDriverNode(ros::NodeHandle&, const std::string&);
+
     virtual ~URDriverNode() {
     }
 
@@ -46,35 +47,12 @@ class URDriverNode : public QObject {
     void goal_callback(GoalHandle_t);
     void cancel_callback(GoalHandle_t);
 
-    bool join_movel_util(const my_robot_move_msgs::Point& pnt, double epsilon);
-    double error(const my_robot_move_msgs::Point& pnt);
+    void remove_task(GoalHandle_t);
 
       signals:
-    void movel_to(float x,
-                  float y,
-                  float z,
-                  float rx,
-                  float ry,
-                  float rz,
-                  float a,
-                  float v);
-    void connect_socket_event();
-    void connect_to_host();
 
+    void create_task(GoalHandle_t handle);
       protected slots:
 
-    void on_movel_to(float x,
-                     float y,
-                     float z,
-                     float rx,
-                     float ry,
-                     float rz,
-                     float a,
-                     float v);
-    void on_connected();
-    void on_disconnected();
-    void on_error();
-    void on_readyread();
-    void on_connect_socket_event();
-    void on_connect_to_host();
+    void on_create_task(GoalHandle_t handle);
 };

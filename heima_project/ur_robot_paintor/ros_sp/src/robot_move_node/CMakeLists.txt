@@ -148,7 +148,7 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/robot_move_node_node.cpp)
-add_executable(ur_robot_move_action_server_node src/ur_robot_move_action_server.cpp src/URDriverNode.cpp)
+add_executable(ur_robot_move_action_server_node src/ur_robot_move_action_server.cpp src/URDriverNode.cpp src/MoveURDriver.cpp src/SimpleURDriver.cpp)
 add_executable(ur_robot_move_action_client_test_node src/ur_robot_move_action_client_test.cpp)
 
 ## Rename C++ executable without prefix
