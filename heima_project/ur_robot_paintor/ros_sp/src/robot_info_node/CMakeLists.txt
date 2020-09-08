@@ -34,6 +34,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   tf
+  actionlib
+  my_robot_move_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -157,7 +159,9 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 # add_executable(${PROJECT_NAME}_node src/robot_info_node_node.cpp)
-add_executable(test_fst src/test.cpp src/InfoWindow.cpp)
+add_executable(test_fst src/test.cpp src/InfoWindow.cpp src/SimpleURDriver.cpp)
+add_executable(ur_pose_action_server_node src/robot_pose_action_server.cpp src/RobotPoseActionServer.cpp src/SimpleURDriver.cpp )
+add_executable(ur_pose_action_client_test_node src/robot_pose_action_client_test.cpp )
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -175,6 +179,16 @@ add_executable(test_fst src/test.cpp src/InfoWindow.cpp)
 # )
 
 target_link_libraries(test_fst
+   ${catkin_LIBRARIES}
+   ${Qt5Libs}
+   ${OpenCV_LIBS}
+)
+target_link_libraries(ur_pose_action_server_node
+   ${catkin_LIBRARIES}
+   ${Qt5Libs}
+   ${OpenCV_LIBS}
+)
+target_link_libraries(ur_pose_action_client_test_node
    ${catkin_LIBRARIES}
    ${Qt5Libs}
    ${OpenCV_LIBS}

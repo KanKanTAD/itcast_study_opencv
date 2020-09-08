@@ -161,7 +161,7 @@ add_executable(svg_to_ways_client_test_node src/svg_to_ways_client_test.cpp)
 add_executable(move_ways_action_server_node src/move_ways_action_server.cpp)
 add_executable(robot_pose_action_server_node src/robot_pose_action_server.cpp)
 add_executable(robot_pose_action_client_test_node src/robot_pose_action_client_test.cpp)
-add_executable(complete_test_node src/complete_test.cpp src/TestWindow.cpp)
+add_executable(complete_test_node src/complete_test.cpp src/TestWindow.cpp src/Paintor.cpp src/SimpleRobotMoveTask.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

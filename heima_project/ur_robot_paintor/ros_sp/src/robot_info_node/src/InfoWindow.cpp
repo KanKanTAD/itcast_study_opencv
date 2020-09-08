@@ -8,7 +8,15 @@
 
 #include <QGridLayout>
 
+#include "actionlib/client/action_client.h"
+#include "actionlib/client/client_helpers.h"
+#include "actionlib/client/comm_state.h"
+#include "actionlib/client/terminal_state.h"
 #include "geometry_msgs/PoseStamped.h"
+#include "my_robot_move_msgs/RobotPoseInfoAction.h"
+#include "my_robot_move_msgs/RobotPoseInfoFeedback.h"
+#include "my_robot_move_msgs/RobotPoseInfoGoal.h"
+#include "ros/duration.h"
 #include "tf/LinearMath/Quaternion.h"
 
 InfoWindow::InfoWindow(QWidget* ptr) : QWidget(ptr) {
@@ -23,7 +31,8 @@ InfoWindow::InfoWindow(QWidget* ptr) : QWidget(ptr) {
     this->port_edit.setText("30003");
     main_layout->addWidget(&this->port_edit, 0, 3, Qt::AlignLeft);
 
-    main_layout->addWidget(&this->state_lab, 1, 0, 1, 4, Qt::AlignRight);
+    main_layout->addWidget(
+        &this->action_server_name_edit, 1, 0, 1, 4, Qt::AlignRight);
 
     main_layout->addWidget(&this->disconnect_btn, 2, 0, Qt::AlignLeft);
     main_layout->addWidget(&this->connect_btn, 2, 3, Qt::AlignRight);
@@ -38,56 +47,67 @@ InfoWindow::InfoWindow(QWidget* ptr) : QWidget(ptr) {
 
     this->show();
 
-    QObject::connect(this, SIGNAL(destroyed()), this, SLOT(close()));
-
-    QObject::connect(&this->socket, &QTcpSocket::connected, [this]() {
-        this->state_lab.setText("connected");
-    });
-    QObject::connect(&this->socket, &QTcpSocket::disconnected, [this]() {
-        this->state_lab.setText("out line");
-    });
     QObject::connect(
-        &this->socket, SIGNAL(readyRead()), this, SLOT(readyread_callback()));
+        &connect_btn, SIGNAL(clicked()), this, SLOT(on_connect_btn()));
 
-    QObject::connect(&this->disconnect_btn, &QPushButton::clicked, [this]() {
-        this->socket.disconnectFromHost();
-    });
-    QObject::connect(&this->connect_btn, &QPushButton::clicked, [this]() {
-        this->socket.connectToHost(this->ip_edit.text(),
-                                   this->port_edit.text().toInt());
-    });
+    QObject::connect(
+        &disconnect_btn, SIGNAL(clicked()), this, SLOT(on_disconnect_btn()));
 }
 
-void InfoWindow::close() {
-    if (nullptr != this->node) {
-        this->node->shutdown();
-    }
-}
-
-void InfoWindow::readyread_callback() {
-    QByteArray bytes = socket.readAll();
-    URData data{bytes};
-    for (int i = 0; i < 6; i++) {
-        this->pose_lab[i].setText(QString::number(data.Tool_vector_actual[i]));
-    }
-    if (nullptr == publisher) {
+void InfoWindow::on_connect_btn() {
+    ROS_INFO_STREAM("on connected!!");
+    client.reset(
+        new actionlib::ActionClient<my_robot_move_msgs::RobotPoseInfoAction>(
+            *node, action_server_name_edit.text().toStdString()));
+    if (!client->waitForActionServerToStart(ros::Duration(5))) {
+        ROS_INFO_STREAM("server no start?");
         return;
     }
+    my_robot_move_msgs::RobotPoseInfoGoal goal;
+    goal.host = this->ip_edit.text().toStdString();
+    goal.port = this->port_edit.text().toInt();
+    ROS_INFO_STREAM("send goal...");
+    goal_handle = client->sendGoal(
+        goal,
+        [](actionlib::ClientGoalHandle<my_robot_move_msgs::RobotPoseInfoAction>
+               handle) {
+            ROS_INFO_STREAM("tran it");
 
-    geometry_msgs::PoseStamped pose;
+            if (handle.getCommState() == actionlib::CommState::ACTIVE) {
+                ROS_INFO_STREAM("active!!");
+            } else if (handle.getCommState() == actionlib::CommState::PENDING) {
+                ROS_INFO_STREAM("pending!!");
+            } else if (handle.getCommState() ==
+                       actionlib::CommState::RECALLING) {
+                ROS_INFO_STREAM("recalling!!");
+            } else if (handle.getCommState() ==
+                       actionlib::CommState::PREEMPTING) {
+                ROS_INFO_STREAM("preempting!!");
+            } else if (handle.getCommState() == actionlib::CommState::DONE) {
+                if (handle.getTerminalState() ==
+                    actionlib::TerminalState::ABORTED) {
+                    ROS_INFO_STREAM("aborted!");
+                } else if (handle.getTerminalState() ==
+                           actionlib::TerminalState::REJECTED) {
+                    ROS_INFO_STREAM("rejected!");
+                } else if (handle.getTerminalState() ==
+                           actionlib::TerminalState::PREEMPTED) {
+                    ROS_INFO_STREAM("preempts!");
+                } else if (handle.getTerminalState() ==
+                           actionlib::TerminalState::RECALLED) {
+                    ROS_INFO_STREAM("recalled!");
+                }
+            }
+        },
+        [this](
+            actionlib::ClientGoalHandle<my_robot_move_msgs::RobotPoseInfoAction>
+                handle,
+            my_robot_move_msgs::RobotPoseInfoFeedbackConstPtr ptr) {
+            auto pose = ptr->pose;
+            this->pose_lab[0].setText(QString::number(pose.x));
+        });
+}
 
-    pose.pose.position.x = data.Tool_vector_actual[0];
-    pose.pose.position.y = data.Tool_vector_actual[1];
-    pose.pose.position.z = data.Tool_vector_actual[2];
-
-    tf::Quaternion ori =
-        tf::createQuaternionFromRPY(data.Tool_vector_actual[3],
-                                    data.Tool_vector_actual[4],
-                                    data.Tool_vector_actual[5]);
-    pose.pose.orientation.w = ori.w();
-    pose.pose.orientation.x = ori.x();
-    pose.pose.orientation.y = ori.y();
-    pose.pose.orientation.z = ori.z();
-
-    publisher->publish(pose);
+void InfoWindow::on_disconnect_btn() {
+    goal_handle.cancel();
 }
