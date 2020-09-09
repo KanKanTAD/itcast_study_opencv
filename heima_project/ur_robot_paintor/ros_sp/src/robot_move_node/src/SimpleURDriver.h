@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <atomic>
+#include <exception>
 #include <functional>
 #include <memory>
 #include <string>
@@ -14,9 +15,9 @@ class SimpleURDriver : public QObject {
     Q_OBJECT
 
     QTcpSocket socket;
-    std::atomic_bool is_connected{false};
 
       public:
+    std::atomic_bool is_connected{false};
     using Ptr_t = std::shared_ptr<SimpleURDriver>;
 
     std::function<void()> on_connected_func;
@@ -33,6 +34,11 @@ class SimpleURDriver : public QObject {
     }
 
     virtual ~SimpleURDriver() {
+        try {
+            this->socket.close();
+        } catch (std::exception& e) {
+            qInfo() << e.what();
+        }
         qInfo() << "release SimpleURDriver " << this;
     }
 

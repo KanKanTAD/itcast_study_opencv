@@ -5,7 +5,7 @@
 #include "ros/duration.h"
 #include "ros/node_handle.h"
 
-int SimpleRobotMoveTask::send_goal(
+int SimpleRobotMoveTask::run_goal(
     const my_robot_move_msgs::PainterMoveGoal& goal) {
     if (nullptr == node) {
         return -1;

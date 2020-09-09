@@ -4,17 +4,17 @@
 #include <my_robot_move_msgs/PainterMoveAction.h>
 #include <qobjectdefs.h>
 
-#include <QObject>
 #include <atomic>
 #include <functional>
 #include <memory>
 #include <string>
 
+#include "MyTask.h"
 #include "actionlib/client/client_helpers.h"
 #include "my_robot_move_msgs/PainterMoveFeedback.h"
 #include "my_robot_move_msgs/PainterMoveGoal.h"
 #include "ros/node_handle.h"
-class SimpleRobotMoveTask : public QObject {
+class SimpleRobotMoveTask : public MyTask {
     Q_OBJECT
       public:
     using ActionClient_t =
@@ -25,23 +25,24 @@ class SimpleRobotMoveTask : public QObject {
 
     GoalHandle_t goal_handle;
 
-    std::function<void(GoalHandle_t)> tran_callback_func;
+    std::function<void(GoalHandle_t)> tran_callback_func = [](GoalHandle_t) {};
     std::function<void(GoalHandle_t,
                        my_robot_move_msgs::PainterMoveFeedbackConstPtr)>
-        feedback_callback_func;
+        feedback_callback_func =
+            [](GoalHandle_t, my_robot_move_msgs::PainterMoveFeedbackConstPtr) {
+            };
 
     std::shared_ptr<ActionClient_t> _client;
     // ActionClient_t* _client{nullptr};
 
-    ros::NodeHandle* node{nullptr};
-    std::string server_name;
     std::atomic_bool is_running{false};
     SimpleRobotMoveTask() = default;
 
-    int send_goal(const my_robot_move_msgs::PainterMoveGoal& goal);
+    int run_goal(const my_robot_move_msgs::PainterMoveGoal& goal);
 
-    void cancel();
+    virtual void cancel() override;
 
+      protected:
     void on_tran_callback(GoalHandle_t handle);
     void on_feedback_callback(
         GoalHandle_t handle,

@@ -1,6 +1,9 @@
 <launch>
 
+	<node pkg="robot_move_node" type="ur_robot_move_action_server_node" name="ur_move_driver_server" ></node>
+	<node pkg="camera_info_node" type="test_node" name="camera_info_node" ></node>
+	<node pkg="robot_info_node" type="ur_pose_action_server_node" name="robot_pose_action_server_node" ></node>
 	<node pkg="image_service_node" type="svg_to_ways_server_node" name="svg_to_ways_server_node" ></node>
-	<node pkg="image_service_node" type="svg_to_ways_client_test_node" name="svg_to_ways_client_test_node" ></node>
+	<node pkg="image_service_node" type="complete_test_node" name="complete_test_node"></node>
 
 </launch>

@@ -1,38 +1,18 @@
 #include "TestWindow.h"
 
-#include <opencv2/core/hal/interface.h>
-#include <qlabel.h>
-#include <qnamespace.h>
-#include <qobject.h>
-#include <qobjectdefs.h>
-#include <qpushbutton.h>
-
-#include <boost/bind/bind.hpp>
-#include <exception>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/core/types.hpp>
-#include <opencv2/highgui.hpp>
-#include <string>
-#include <thread>
-
+#include "SimpleRobotInfoTask.h"
 #include "SimpleRobotMoveTask.h"
-#include "about_svg_utils.hpp"
-#include "cv_bridge/cv_bridge.h"
-#include "my_robot_move_msgs/PainterMoveActionGoal.h"
-#include "my_robot_move_msgs/PainterMoveFeedback.h"
-#include "my_robot_move_msgs/PainterMoveGoal.h"
-#include "my_robot_move_msgs/Point.h"
 #include "my_robot_move_msgs/RobotPoseInfoFeedback.h"
-#include "my_robot_move_msgs/RobotPoseInfoGoal.h"
-#include "my_robot_move_msgs/SvgToPntss.h"
-#include "ros/duration.h"
-#include "sensor_msgs/image_encodings.h"
 
 TestWindow::TestWindow() : QWidget(nullptr) {
     qRegisterMetaType<std::string>("std::string");
     _init_virsual();
     _init_event();
     this->show();
+}
+void TestWindow::set_node(ros::NodeHandle& node) {
+    this->node                 = &node;
+    this->robot_pose_task.node = &node;
 }
 
 void TestWindow::_init_virsual() {
@@ -58,13 +38,6 @@ void TestWindow::_init_virsual() {
     main_lyt->addWidget(&pose_lab, row, 1, 2, 3);
 
     row += 2;
-
-    // main_lyt->addWidget(&state_lab, row, 0, 1, 4, Qt::AlignCenter);
-
-    // row++;
-
-    // main_lyt->addWidget(&connect_btn, row, 0, Qt::AlignLeft);
-    // main_lyt->addWidget(&disconnect_btn, row, 3, Qt::AlignRight);
 
     row++;
 
@@ -166,15 +139,8 @@ void TestWindow::_init_virsual() {
 
     row++;
 }
+
 void TestWindow::_init_event() {
-    QObject::connect(this,
-                     SIGNAL(set_paint_svg_bar(int)),
-                     this,
-                     SLOT(on_set_paint_svg_bar(int)));
-    QObject::connect(this,
-                     SIGNAL(set_handdraw_bar(int)),
-                     this,
-                     SLOT(on_set_handdraw_bar(int)));
     QObject::connect(this,
                      SIGNAL(info_out(const std::string&)),
                      this,
@@ -183,95 +149,63 @@ void TestWindow::_init_event() {
                      SIGNAL(pose_out(const std::string&)),
                      this,
                      SLOT(on_pose_out(const std::string&)));
-
-    QObject::connect(&opencap_btn, SIGNAL(clicked()), this, SLOT(on_opencap()));
-
-    QObject::connect(&closecap_btn, &QPushButton::clicked, [this]() {
-        this->subscriber.shutdown();
-        cv::destroyAllWindows();
-    });
-
-    QObject::connect(&opensvg_btn, SIGNAL(clicked()), this, SLOT(on_opensvg()));
-
     QObject::connect(
         &listenpose_btn, SIGNAL(clicked()), this, SLOT(on_listen_pose()));
 
     QObject::connect(
         &dislistenpose_btn, SIGNAL(clicked()), this, SLOT(on_dislisten_pose()));
-
-    QObject::connect(&clean_paintor_btn, &QPushButton::clicked, [this]() {
-        paintor.clear_pts();
-    });
-
     QObject::connect(&preview_paintor_btn,
                      SIGNAL(clicked()),
                      this,
                      SLOT(on_preview_handdraw()));
-    QObject::connect(&paint_handdraw_btn,
-                     SIGNAL(clicked()),
-                     this,
-                     SLOT(on_paint_handdraw()));
-    QObject::connect(&dispaint_handdraw_btn, &QPushButton::clicked, [this]() {
-        emit info_out("dispaint_handdraw_btn clicked!");
-        handdraw_task.cancel();
+    QObject::connect(&clean_paintor_btn, &QPushButton::clicked, [this]() {
+        paintor.clear_pts();
+    });
+    QObject::connect(&opencap_btn, SIGNAL(clicked()), this, SLOT(on_opencap()));
+    QObject::connect(&closecap_btn, &QPushButton::clicked, [this]() {
+        camera_task.cancel();
     });
 
-    handdraw_task.tran_callback_func =
-        [this](SimpleRobotMoveTask::GoalHandle_t handle) {
-            ROS_INFO_STREAM("tran it");
+    robot_pose_task.on_feedback_callback_func =
+        [this](SimpleRobotInfoTask::GoalHandle_t handle,
+               my_robot_move_msgs::RobotPoseInfoFeedbackConstPtr ptr) {
+            auto& p = ptr->pose;
+            char buff[1024];
+            std::sprintf(buff,
+                         "%3.6f ,%3.6f ,%3.6f \n%3.6f ,%3.6f ,%3.6f ",
+                         p.x,
+                         p.y,
+                         p.z,
+                         p.rx,
+                         p.ry,
+                         p.rz);
+            emit pose_out(buff);
         };
-    handdraw_task.feedback_callback_func =
-        [this](SimpleRobotMoveTask::GoalHandle_t handle,
-               my_robot_move_msgs::PainterMoveFeedbackConstPtr ptr) {
-            emit this->set_handdraw_bar(int(ptr->percent * 100));
-        };
-
-    QObject::connect(
-        &paint_svg_btn, SIGNAL(clicked()), this, SLOT(on_paint_svg()));
-
-    QObject::connect(&dispaint_svg_btn, &QPushButton::clicked, [this]() {
-        emit info_out("dispaint_svg_btn clicked!");
-        this->paint_svg_task.cancel();
-    });
-    handdraw_task.tran_callback_func =
-        [this](SimpleRobotMoveTask::GoalHandle_t handle) {
-            ROS_INFO_STREAM("tran it");
-        };
-    handdraw_task.feedback_callback_func =
-        [this](SimpleRobotMoveTask::GoalHandle_t handle,
-               my_robot_move_msgs::PainterMoveFeedbackConstPtr ptr) {
-            emit this->set_handdraw_bar(int(ptr->percent * 100));
-        };
-    paint_svg_task.tran_callback_func =
-        [this](SimpleRobotMoveTask::GoalHandle_t handle) {
-            ROS_INFO_STREAM("tran it");
-        };
-    paint_svg_task.feedback_callback_func =
-        [this](SimpleRobotMoveTask::GoalHandle_t handle,
-               my_robot_move_msgs::PainterMoveFeedbackConstPtr ptr) {
-            emit this->set_paint_svg_bar(int(ptr->percent * 100));
-        };
+    _init_about_svg_event();
+    _init_about_handdraw_event();
 }
 
-void TestWindow::simple_cap_test_callback(
-    const sensor_msgs::ImageConstPtr& ptr) {
-    auto im = cv_bridge::toCvCopy(*ptr, sensor_msgs::image_encodings::BGR8);
-    cv::imshow("info", im->image);
-}
-
-void TestWindow::on_opencap() {
-    if (nullptr == node) {
-        emit info_out("node is nullptr!");
+void TestWindow::on_listen_pose() {
+    emit info_out("on listen pose");
+    robot_pose_task.node = this->node;
+    auto name =
+        loadQString(pose_servername_edit, "ur_robot_pose_server").toStdString();
+    robot_pose_task.server_name = name;
+    my_robot_move_msgs::RobotPoseInfoGoal goal;
+    goal.host = loadQString(host_edit, "127.0.0.1").toStdString();
+    goal.port = loadQString(port_edit, "30003").toInt();
+    auto code = robot_pose_task.run_goal(goal);
+    if (-1 == code) {
+        emit info_out("node is nullptr");
+        return;
+    } else if (-2 == code) {
+        emit info_out("server '" + name + "' timeout 5 seconds");
         return;
     }
-    subscriber.shutdown();
+}
 
-    auto topic_name =
-        loadQString(topic_name_edit, "camera_image").toStdString();
-
-    subscriber = node->subscribe<sensor_msgs::Image>(
-        topic_name, 1024, TestWindow::simple_cap_test_callback);
-    emit info_out("subscribe to '" + subscriber.getTopic() + "'");
+void TestWindow::on_dislisten_pose() {
+    robot_pose_task.cancel();
 }
 
 void TestWindow::on_info_out(const std::string& str) {
@@ -280,136 +214,6 @@ void TestWindow::on_info_out(const std::string& str) {
 void TestWindow::on_pose_out(const std::string& str) {
     pose_lab.setText(QString::fromStdString(str));
 }
-
-void TestWindow::on_opensvg() {
-    emit info_out("on opensvg");
-    new std::thread([this]() {
-        auto server_name =
-            loadQString(svgservername_edit, "svg_to_ways_server").toStdString();
-        auto file_path =
-            loadQString(svgfilepath_edit, "/home/tad/Picture/svg_s/8.svg")
-                .toStdString();
-        auto client =
-            node->serviceClient<my_robot_move_msgs::SvgToPntss>(server_name);
-
-        if (!client.waitForExistence(ros::Duration(5))) {
-            emit info_out("has not been adverised,timeout 5 seconds");
-            return;
-        }
-
-        my_robot_move_msgs::SvgToPntss obj;
-
-        boost::property_tree::ptree pt;
-        try {
-            boost::property_tree::read_xml(file_path, pt);
-        } catch (std::exception& e) {
-            emit info_out(e.what());
-            return;
-        }
-
-        auto pathd             = utils::get_pathd_from_doc(pt);
-        auto sz                = utils::get_size_from_doc(pt);
-        obj.request.ori_x      = 0;
-        obj.request.ori_y      = 0;
-        obj.request.ori_z      = 0.029;
-        obj.request.rx         = 3.14;
-        obj.request.ry         = 0.0;
-        obj.request.rz         = 0.0;
-        obj.request.tran_z     = 0.049;
-        obj.request.width      = sz.first;
-        obj.request.height     = sz.second;
-        obj.request.svg_width  = sz.first;
-        obj.request.svg_height = sz.second;
-        obj.request.svg_pathds = *pathd;
-
-        if (client.call(obj)) {
-            cv::Mat pic =
-                cv::Mat::zeros(obj.request.height, obj.request.width, CV_8UC1);
-            auto& pts = obj.response.pts.data;
-            for (int i = 1; i < pts.size(); i++) {
-                cv::Scalar color = pts[i].z == pts[i - 1].z
-                                       ? cv::Scalar::all(255.0)
-                                       : cv::Scalar::all(128.0);
-                cv::line(pic,
-                         {int(pts[i - 1].x), int(pts[i - 1].y)},
-                         {int(pts[i].x), int(pts[i].y)},
-                         color);
-            }
-
-            cv::imshow("pic", pic);
-        }
-        client.shutdown();
-    });
-}
-
-void TestWindow::on_listen_pose() {
-    emit info_out("on listen pose");
-    if (nullptr == node) {
-        emit info_out("node is nullptr");
-        return;
-    }
-    new std::thread([this]() {
-        auto name = loadQString(pose_servername_edit, "ur_robot_pose_server")
-                        .toStdString();
-        pose_client.reset(new _ActionClient_t(*node, name));
-        emit info_out("action to '" + name + "'");
-        if (!pose_client->waitForActionServerToStart(ros::Duration(5))) {
-            emit info_out("server '" + name + "' timeout 5 seconds");
-            return;
-        }
-        is_cancel_listen = false;
-
-        my_robot_move_msgs::RobotPoseInfoGoal goal;
-        goal.host = loadQString(host_edit, "127.0.0.1").toStdString();
-        goal.port = loadQString(port_edit, "30003").toInt();
-        emit info_out("sendgoal -- " + goal.host + ":" +
-                      std::to_string(goal.port));
-        goal_handle = pose_client->sendGoal(
-            goal,
-            [](GoalHandle_t handle) { ROS_INFO_STREAM("tran it!"); },
-            // boost::bind(
-            //&TestWindow::on_tran_callback, this, boost::placeholders::_1),
-            boost::bind(&TestWindow::on_feedback_callback,
-                        this,
-                        boost::placeholders::_1,
-                        boost::placeholders::_2));
-    });
-}
-
-void TestWindow::on_dislisten_pose() {
-    goal_handle.cancel();
-    // is_cancel_listen = true;
-    // try {
-    // pose_client->cancelAllGoals();
-    //} catch (std::exception& e) {
-    // emit info_out(e.what());
-    //}
-}
-
-void TestWindow::on_tran_callback(GoalHandle_t handle) {
-    ROS_INFO_STREAM("tran it");
-}
-
-void TestWindow::on_feedback_callback(
-    GoalHandle_t handle,
-    my_robot_move_msgs::RobotPoseInfoFeedbackConstPtr ptr) {
-    // if (is_cancel_listen == true) {
-    // handle.cancel();
-    // return;
-    //}
-    auto& p = ptr->pose;
-    char buff[1024];
-    std::sprintf(buff,
-                 "%3.6f ,%3.6f ,%3.6f \n%3.6f ,%3.6f ,%3.6f ",
-                 p.x,
-                 p.y,
-                 p.z,
-                 p.rx,
-                 p.ry,
-                 p.rz);
-    emit pose_out(buff);
-}
-
 void TestWindow::on_preview_handdraw() {
     auto step   = loadQString(sample_step_edit, "10").toInt();
     auto ptss   = paintor.load_muti_pts(step);
@@ -425,6 +229,110 @@ void TestWindow::on_preview_handdraw() {
     }
 
     cv::imshow("preview", pic);
+}
+
+void TestWindow::on_opencap() {
+    if (nullptr == node) {
+        emit info_out("node is nullptr!");
+        return;
+    }
+
+    auto topic_name =
+        loadQString(topic_name_edit, "camera_image").toStdString();
+    camera_task.node        = this->node;
+    camera_task.server_name = topic_name;
+    camera_task.run_goal();
+    emit info_out("subscribe to '" + topic_name + "'");
+}
+void TestWindow::_init_about_svg_event() {
+    QObject::connect(&opensvg_btn, SIGNAL(clicked()), this, SLOT(on_opensvg()));
+    svg_to_ways_task.on_successed_func = [](SimpleSvgToWaysTask::Bean_t& bean) {
+        auto& obj = bean;
+        cv::Mat pic =
+            cv::Mat::zeros(obj.request.height, obj.request.width, CV_8UC1);
+        auto& pts = obj.response.pts.data;
+        for (int i = 1; i < pts.size(); i++) {
+            cv::Scalar color = pts[i].z == pts[i - 1].z
+                                   ? cv::Scalar::all(255.0)
+                                   : cv::Scalar::all(128.0);
+            cv::line(pic,
+                     {int(pts[i - 1].x), int(pts[i - 1].y)},
+                     {int(pts[i].x), int(pts[i].y)},
+                     color);
+        }
+        cv::imshow("pic", pic);
+    };
+    svg_to_ways_task.on_fail_func = [this](int code) {
+        if (-1 == code) {
+            emit this->info_out("server timeout");
+        } else if (-2 == code) {
+            emit this->info_out("file open error!");
+        }
+    };
+}
+void TestWindow::on_opensvg() {
+    emit info_out("on opensvg");
+    auto _server_name =
+        loadQString(svgservername_edit, "svg_to_ways_server").toStdString();
+    auto file_path =
+        loadQString(svgfilepath_edit, "/home/tad/Picture/svg_s/8.svg")
+            .toStdString();
+    svg_to_ways_task.node        = this->node;
+    svg_to_ways_task.server_name = _server_name;
+    SimpleSvgToWaysTask::Bean_t bean;
+    SimpleSvgToWaysTask::_set_bean_pathd_by_filename1(bean, file_path);
+    SimpleSvgToWaysTask::_set_default_request_bean(bean);
+    this->svg_to_ways_task.call(bean);
+}
+
+void TestWindow::_init_about_handdraw_event() {
+    QObject::connect(this,
+                     SIGNAL(set_handdraw_bar(int)),
+                     this,
+                     SLOT(on_set_handdraw_bar(int)));
+    QObject::connect(&paint_handdraw_btn,
+                     SIGNAL(clicked()),
+                     this,
+                     SLOT(on_paint_handdraw()));
+    QObject::connect(&dispaint_handdraw_btn, &QPushButton::clicked, [this]() {
+        emit info_out("dispaint_handdraw_btn clicked!");
+        this->hanndraw_task.cancel();
+    });
+    hanndraw_task.feedback_callback_func =
+        [this](SimpleRobotMoveTask::GoalHandle_t handle,
+               my_robot_move_msgs::PainterMoveFeedbackConstPtr ptr) mutable {
+            emit this->set_handdraw_bar(int(ptr->percent));
+        };
+}
+
+void TestWindow::on_paint_handdraw() {
+    ROS_INFO_STREAM("on paint handdraw");
+    emit this->info_out("on paint handdraw");
+    emit this->set_handdraw_bar(0);
+
+    new std::thread([this]() {
+        auto server_name = loadQString(robot_move_action_server_name_edit,
+                                       "ur_move_driver_server")
+                               .toStdString();
+        hanndraw_task.node        = this->node;
+        hanndraw_task.server_name = server_name;
+        my_robot_move_msgs::PainterMoveGoal goal;
+        this->set_handdraw_goal(goal);
+        auto code = this->hanndraw_task.run_goal(goal);
+        switch (code) {
+            case -1:
+                emit info_out("nullptr node");
+                break;
+            case 1:
+                emit info_out("timeout !");
+                break;
+            default:
+                break;
+        }
+    });
+}
+void TestWindow::on_set_handdraw_bar(int v) {
+    this->paint_handdraw_bar.setValue(v);
 }
 
 void TestWindow::get_half_info(my_robot_move_msgs::PainterMoveGoal& goal) {
@@ -443,7 +351,6 @@ void TestWindow::get_ori_pose(my_robot_move_msgs::Point& pose) {
     pose.ry = loadQString(this->ori_pose_edit[4], "0.0").toFloat();
     pose.rz = loadQString(this->ori_pose_edit[5], "0.0").toFloat();
 }
-
 void TestWindow::set_handdraw_goal(my_robot_move_msgs::PainterMoveGoal& goal) {
     auto width  = loadQString(real_width_edit, "-0.4").toDouble();
     auto height = loadQString(real_height_edit, "0.2").toDouble();
@@ -472,112 +379,4 @@ void TestWindow::set_handdraw_goal(my_robot_move_msgs::PainterMoveGoal& goal) {
     p   = pose;
     p.z = tran_z;
     ways.push_back(p);
-}
-void TestWindow::on_paint_handdraw() {
-    ROS_INFO_STREAM("on paint handdraw");
-    emit this->set_handdraw_bar(0);
-
-    new std::thread([this]() {
-        auto server_name = loadQString(robot_move_action_server_name_edit,
-                                       "ur_move_driver_server")
-                               .toStdString();
-        handdraw_task.server_name = server_name;
-        my_robot_move_msgs::PainterMoveGoal goal;
-        set_handdraw_goal(goal);
-        auto code = handdraw_task.send_goal(goal);
-        switch (code) {
-            case -1:
-                emit info_out("nullptr node");
-                break;
-            case 1:
-                emit info_out("timeout !");
-                break;
-            default:
-                break;
-        }
-    });
-}
-
-void TestWindow::on_set_handdraw_bar(int v) {
-    this->paint_handdraw_bar.setValue(v);
-}
-void TestWindow::on_set_paint_svg_bar(int v) {
-    this->paint_svg_bar.setValue(v);
-}
-
-void TestWindow::on_paint_svg() {
-    ROS_INFO_STREAM("on paint svg");
-    emit this->set_paint_svg_bar(0);
-    emit info_out("on paint svg");
-
-    new std::thread([this]() {
-        auto server_name =
-            loadQString(svgservername_edit, "svg_to_ways_server").toStdString();
-        auto file_path =
-            loadQString(svgfilepath_edit, "/home/tad/Picture/svg_s/8.svg")
-                .toStdString();
-        auto client =
-            node->serviceClient<my_robot_move_msgs::SvgToPntss>(server_name);
-
-        if (!client.waitForExistence(ros::Duration(5))) {
-            emit info_out("has not been adverised,timeout 5 seconds");
-            return;
-        }
-
-        my_robot_move_msgs::SvgToPntss obj;
-
-        boost::property_tree::ptree pt;
-        try {
-            boost::property_tree::read_xml(file_path, pt);
-        } catch (std::exception& e) {
-            emit info_out(e.what());
-            return;
-        }
-        my_robot_move_msgs::Point pose;
-        this->get_ori_pose(pose);
-        auto tran_z = loadQString(tran_z_edit, "0").toFloat();
-        tran_z      = tran_z == 0.0f ? pose.z * 1.5f : tran_z;
-        auto width  = loadQString(real_width_edit, "-0.4").toFloat();
-        auto height = loadQString(real_height_edit, "0.2").toFloat();
-
-        auto pathd             = utils::get_pathd_from_doc(pt);
-        auto sz                = utils::get_size_from_doc(pt);
-        obj.request.ori_x      = pose.x;
-        obj.request.ori_y      = pose.y;
-        obj.request.ori_z      = pose.z;
-        obj.request.rx         = pose.rx;
-        obj.request.ry         = pose.ry;
-        obj.request.rz         = pose.rz;
-        obj.request.tran_z     = tran_z;
-        obj.request.width      = width;
-        obj.request.height     = height;
-        obj.request.svg_width  = sz.first;
-        obj.request.svg_height = sz.second;
-        obj.request.svg_pathds = *pathd;
-
-        if (client.call(obj)) {
-            auto& pts = obj.response.pts;
-
-            auto _server_name =
-                loadQString(this->robot_move_action_server_name_edit,
-                            "ur_move_driver_server")
-                    .toStdString();
-            paint_svg_task.server_name = _server_name;
-            my_robot_move_msgs::PainterMoveGoal goal;
-            this->get_half_info(goal);
-            goal.ways = pts;
-            auto code = paint_svg_task.send_goal(goal);
-            switch (code) {
-                case -1:
-                    emit info_out("nullptr node");
-                    break;
-                case 1:
-                    emit info_out(_server_name + " timeout !");
-                    break;
-                default:
-                    break;
-            }
-        }
-        client.shutdown();
-    });
 }

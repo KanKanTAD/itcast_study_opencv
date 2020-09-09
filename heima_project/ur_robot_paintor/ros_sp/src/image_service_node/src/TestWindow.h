@@ -1,32 +1,23 @@
 #pragma once
-
-#include <cv_bridge/cv_bridge.h>
-#include <qlabel.h>
-#include <qlineedit.h>
-#include <qprogressbar.h>
-#include <qpushbutton.h>
-#include <qwidget.h>
-#include <sensor_msgs/Image.h>
+#include <actionlib/client/action_client.h>
+#include <my_robot_move_msgs/RobotPoseInfoAction.h>
 
 #include <QGridLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QObject>
 #include <QProgressBar>
 #include <QPushButton>
 #include <QWidget>
 #include <atomic>
 #include <memory>
+#include <opencv2/opencv.hpp>
 
 #include "Paintor.h"
+#include "SimpleCameraTask.h"
+#include "SimpleRobotInfoTask.h"
 #include "SimpleRobotMoveTask.h"
-#include "actionlib/client/action_client.h"
-#include "actionlib/client/client_helpers.h"
-#include "my_robot_move_msgs/PainterMoveActionGoal.h"
-#include "my_robot_move_msgs/Point.h"
-#include "my_robot_move_msgs/RobotPoseInfoAction.h"
-#include "my_robot_move_msgs/RobotPoseInfoFeedback.h"
-#include "ros/node_handle.h"
-#include "ros/subscriber.h"
+#include "SimpleSvgToWaysTask.h"
 
 class TestWindow : public QWidget {
     Q_OBJECT
@@ -44,29 +35,29 @@ class TestWindow : public QWidget {
     ros::NodeHandle* node{nullptr};
 
     QLineEdit host_edit, port_edit;
-    QPushButton connect_btn{"connect"}, disconnect_btn{"disconnect"};
-    QLabel state_lab;
 
+    SimpleRobotInfoTask robot_pose_task;
     QLineEdit pose_servername_edit{"ur_robot_pose_server"};
     QPushButton listenpose_btn{"listen pose"}, dislistenpose_btn{"dislisten"};
     QLabel pose_lab;
 
+    SimpleCameraTask camera_task;
     QPushButton opencap_btn{"open capture"};
     QLineEdit topic_name_edit;
     QPushButton closecap_btn{"close capture"};
 
+    SimpleSvgToWaysTask svg_to_ways_task;
     QPushButton opensvg_btn{"open svg"};
     QLineEdit svgservername_edit;
     QLineEdit svgfilepath_edit;
 
     QLineEdit robot_move_action_server_name_edit{"ur_move_driver_server"};
 
-    SimpleRobotMoveTask handdraw_task;
+    SimpleRobotMoveTask hanndraw_task;
     QPushButton paint_handdraw_btn{"paint hand draw"};
     QPushButton dispaint_handdraw_btn{"break"};
     QProgressBar paint_handdraw_bar;
 
-    SimpleRobotMoveTask paint_svg_task;
     QPushButton paint_svg_btn{"paint svg "};
     QPushButton dispaint_svg_btn{"break"};
     QProgressBar paint_svg_bar;
@@ -90,26 +81,14 @@ class TestWindow : public QWidget {
 
     QLabel info_lab;
 
-    ros::Subscriber subscriber;
-
-    std::shared_ptr<_ActionClient_t> pose_client;
-    GoalHandle_t goal_handle;
-    std::atomic_bool is_cancel_listen{false};
-
     void _init_virsual();
     void _init_event();
+    void _init_about_svg_event();
+    void _init_about_handdraw_event();
 
       protected:
-    virtual ~TestWindow() {
-    }
-
-    static void simple_cap_test_callback(const sensor_msgs::ImageConstPtr& ptr);
-
-    void on_tran_callback(GoalHandle_t);
-    void on_feedback_callback(
-        GoalHandle_t,
-        my_robot_move_msgs::RobotPoseInfoFeedbackConstPtr);
-
+    void get_half_info(my_robot_move_msgs::PainterMoveGoal&);
+    void get_ori_pose(my_robot_move_msgs::Point& pose);
     void set_handdraw_goal(my_robot_move_msgs::PainterMoveGoal&);
 
       public:
@@ -125,36 +104,23 @@ class TestWindow : public QWidget {
         return t == if_str ? default_ : t;
     }
 
-    void set_node(ros::NodeHandle& node) {
-        this->node                = &node;
-        this->handdraw_task.node  = this->node;
-        this->paint_svg_task.node = this->node;
+    void set_node(ros::NodeHandle&);
+    virtual ~TestWindow() {
     }
-
-    void get_half_info(my_robot_move_msgs::PainterMoveGoal&);
-    void get_ori_pose(my_robot_move_msgs::Point& pose);
 
       signals:
     void info_out(const std::string&);
     void pose_out(const std::string&);
-
     void set_handdraw_bar(int);
-    void set_paint_svg_bar(int);
+
       protected slots:
+    void on_pose_out(const std::string&);
     void on_listen_pose();
     void on_dislisten_pose();
-    void on_opencap();
     void on_info_out(const std::string&);
-    void on_pose_out(const std::string&);
-
-    void on_opensvg();
-
     void on_preview_handdraw();
-
+    void on_opencap();
+    void on_opensvg();
     void on_paint_handdraw();
-
-    void on_paint_svg();
-
     void on_set_handdraw_bar(int);
-    void on_set_paint_svg_bar(int);
 };

@@ -51,15 +51,24 @@ void URDriverNode::goal_callback(GoalHandle_t handle) {
 }
 
 void URDriverNode::cancel_callback(GoalHandle_t handle) {
-    ROS_INFO_STREAM("got it");
-    this->remove_task(handle);
+    ROS_INFO_STREAM("cancel it");
+    try {
+        // handle.setCanceled();
+        this->remove_task(handle);
+    } catch (std::exception& e) {
+        ROS_INFO_STREAM(e.what());
+    }
 }
 
 void URDriverNode::remove_task(GoalHandle_t handle) {
     for (auto it = this->drivers.begin(); it != this->drivers.end(); it++) {
         if ((*it)->handle.getGoalID() == handle.getGoalID()) {
-            emit(*it)->disconnect_from_host();
-            drivers.erase(it);
+            //(*it)->handle.setCanceled();
+            if ((*it)->is_connected) {
+                emit(*it)->disconnect_from_host();
+            } else {
+                // this->drivers.erase(it);
+            }
             return;
         }
     }
