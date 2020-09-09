@@ -58,6 +58,8 @@ class TestWindow : public QWidget {
     QPushButton dispaint_handdraw_btn{"break"};
     QProgressBar paint_handdraw_bar;
 
+    SimpleRobotMoveTask svg_paint_task;
+    SimpleSvgToWaysTask svg_to_ways_paint_task;
     QPushButton paint_svg_btn{"paint svg "};
     QPushButton dispaint_svg_btn{"break"};
     QProgressBar paint_svg_bar;
@@ -85,6 +87,7 @@ class TestWindow : public QWidget {
     void _init_event();
     void _init_about_svg_event();
     void _init_about_handdraw_event();
+    void _init_about_paint_svg_event();
 
       protected:
     void get_half_info(my_robot_move_msgs::PainterMoveGoal&);
@@ -112,6 +115,7 @@ class TestWindow : public QWidget {
     void info_out(const std::string&);
     void pose_out(const std::string&);
     void set_handdraw_bar(int);
+    void set_paint_svg_bar(int);
 
       protected slots:
     void on_pose_out(const std::string&);
@@ -122,5 +126,7 @@ class TestWindow : public QWidget {
     void on_opencap();
     void on_opensvg();
     void on_paint_handdraw();
+    void on_paint_svg();
     void on_set_handdraw_bar(int);
+    void on_set_paint_svg_bar(int);
 };

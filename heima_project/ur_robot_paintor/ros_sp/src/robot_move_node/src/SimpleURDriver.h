@@ -20,10 +20,11 @@ class SimpleURDriver : public QObject {
     std::atomic_bool is_connected{false};
     using Ptr_t = std::shared_ptr<SimpleURDriver>;
 
-    std::function<void()> on_connected_func;
-    std::function<void()> on_disconnected_func;
-    std::function<void()> on_readyread_func;
-    std::function<void(QAbstractSocket::SocketError)> on_error_func;
+    std::function<void()> on_connected_func    = [] {};
+    std::function<void()> on_disconnected_func = [] {};
+    std::function<void()> on_readyread_func    = [] {};
+    std::function<void(QAbstractSocket::SocketError)> on_error_func =
+        [](QAbstractSocket::SocketError) {};
 
     URData ur_data;
     std::string host{"127.0.0.1"};

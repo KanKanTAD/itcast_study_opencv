@@ -48,7 +48,7 @@ bool SimpleSvgToWaysTask::_set_bean_pathd_by_filename1(
     return true;
 }
 
-void SimpleSvgToWaysTask::call(Bean_t& bean) {
+void SimpleSvgToWaysTask::run_goal(Bean_t& bean) {
     new std::thread([this, bean]() mutable {
         auto client =
             node->serviceClient<my_robot_move_msgs::SvgToPntss>(server_name);

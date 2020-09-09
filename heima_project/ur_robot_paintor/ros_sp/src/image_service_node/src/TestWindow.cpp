@@ -1,5 +1,7 @@
 #include "TestWindow.h"
 
+#include <string>
+
 #include "SimpleRobotInfoTask.h"
 #include "SimpleRobotMoveTask.h"
 #include "my_robot_move_msgs/RobotPoseInfoFeedback.h"
@@ -90,7 +92,7 @@ void TestWindow::_init_virsual() {
     main_lyt->addWidget(new QLabel{"ori_xyz:"}, row, 0);
     ori_pose_edit[0].setText("-0.127");
     ori_pose_edit[1].setText("-0.327");
-    ori_pose_edit[2].setText("-0.047");
+    ori_pose_edit[2].setText("0.047");
     for (int i = 0; i < 3; i++) {
         main_lyt->addWidget(&this->ori_pose_edit[i], row, 1 + i);
     }
@@ -117,6 +119,7 @@ void TestWindow::_init_virsual() {
     main_lyt->addWidget(new QLabel{"epsilon:"}, row, 0);
     main_lyt->addWidget(&epsilon_edit, row, 1);
     main_lyt->addWidget(new QLabel{"tran_z:"}, row, 2);
+    tran_z_edit.setText("0.08");
     main_lyt->addWidget(&tran_z_edit, row, 3);
 
     row++;
@@ -183,6 +186,7 @@ void TestWindow::_init_event() {
         };
     _init_about_svg_event();
     _init_about_handdraw_event();
+    _init_about_paint_svg_event();
 }
 
 void TestWindow::on_listen_pose() {
@@ -282,7 +286,7 @@ void TestWindow::on_opensvg() {
     SimpleSvgToWaysTask::Bean_t bean;
     SimpleSvgToWaysTask::_set_bean_pathd_by_filename1(bean, file_path);
     SimpleSvgToWaysTask::_set_default_request_bean(bean);
-    this->svg_to_ways_task.call(bean);
+    this->svg_to_ways_task.run_goal(bean);
 }
 
 void TestWindow::_init_about_handdraw_event() {
@@ -354,7 +358,7 @@ void TestWindow::get_ori_pose(my_robot_move_msgs::Point& pose) {
 void TestWindow::set_handdraw_goal(my_robot_move_msgs::PainterMoveGoal& goal) {
     auto width  = loadQString(real_width_edit, "-0.4").toDouble();
     auto height = loadQString(real_height_edit, "0.2").toDouble();
-    auto tran_z = loadQString(tran_z_edit, "0.0").toFloat();
+    auto tran_z = loadQString(tran_z_edit, "0.1").toFloat();
     auto step   = loadQString(sample_step_edit, "10").toInt();
     auto ptss   = paintor.load_muti_pts(step);
     get_half_info(goal);
@@ -379,4 +383,78 @@ void TestWindow::set_handdraw_goal(my_robot_move_msgs::PainterMoveGoal& goal) {
     p   = pose;
     p.z = tran_z;
     ways.push_back(p);
+}
+void TestWindow::_init_about_paint_svg_event() {
+    QObject::connect(this,
+                     SIGNAL(set_paint_svg_bar(int)),
+                     this,
+                     SLOT(on_set_paint_svg_bar(int)));
+    QObject::connect(
+        &paint_svg_btn, SIGNAL(clicked()), this, SLOT(on_paint_svg()));
+
+    QObject::connect(&dispaint_svg_btn, &QPushButton::clicked, [this]() {
+        emit info_out("dispaint_svg_btn clicked!");
+        this->svg_paint_task.cancel();
+    });
+    svg_paint_task.feedback_callback_func =
+        [this](SimpleRobotMoveTask::GoalHandle_t handle,
+               my_robot_move_msgs::PainterMoveFeedbackConstPtr ptr) mutable {
+            emit this->set_paint_svg_bar(int(ptr->percent));
+        };
+    svg_to_ways_paint_task.on_successed_func =
+        [this](SimpleSvgToWaysTask::Bean_t& obj) mutable {
+            ROS_INFO_STREAM("successed get ways ,painting...");
+            emit info_out("successed get ways ,painting...");
+            this->svg_paint_task.server_name =
+                loadQString(this->robot_move_action_server_name_edit,
+                            "ur_move_driver_server")
+                    .toStdString();
+            this->svg_paint_task.node = this->node;
+            my_robot_move_msgs::PainterMoveGoal goal;
+            get_half_info(goal);
+            goal.ways.data.swap(obj.response.pts.data);
+            ROS_INFO_STREAM("run_goal to painting... to -->" + goal.host + ":" +
+                            std::to_string(goal.port));
+            emit info_out("run_goal to painting... to -->" + goal.host + ":" +
+                          std::to_string(goal.port));
+            this->svg_paint_task.run_goal(goal);
+        };
+    svg_to_ways_paint_task.on_fail_func = [this](int code) {
+        if (-1 == code) {
+            emit this->info_out("server timeout");
+        } else if (-2 == code) {
+            emit this->info_out("file open error!");
+        }
+    };
+}
+
+void TestWindow::on_set_paint_svg_bar(int v) {
+    this->paint_svg_bar.setValue(v);
+}
+void TestWindow::on_paint_svg() {
+    ROS_INFO_STREAM("on paint svg");
+    emit this->set_paint_svg_bar(0);
+    emit info_out("on paint svg");
+
+    auto _server_name =
+        loadQString(svgservername_edit, "svg_to_ways_server").toStdString();
+    auto file_path =
+        loadQString(svgfilepath_edit, "/home/tad/Picture/svg_s/8.svg")
+            .toStdString();
+    svg_to_ways_paint_task.node        = this->node;
+    svg_to_ways_paint_task.server_name = _server_name;
+    SimpleSvgToWaysTask::Bean_t obj;
+    SimpleSvgToWaysTask::_set_bean_pathd_by_filename0(obj, file_path);
+    obj.request.width  = loadQString(real_width_edit, "-0.4").toDouble();
+    obj.request.height = loadQString(real_height_edit, "0.2").toDouble();
+    obj.request.ori_x = loadQString(this->ori_pose_edit[0], "-0.17").toDouble();
+    obj.request.ori_y =
+        loadQString(this->ori_pose_edit[1], "-0.413").toDouble();
+    obj.request.ori_z = loadQString(this->ori_pose_edit[2], "0.041").toDouble();
+    obj.request.rx = loadQString(this->ori_pose_edit[3], "3.1415").toDouble();
+    obj.request.ry = loadQString(this->ori_pose_edit[4], "0").toDouble();
+    obj.request.rz = loadQString(this->ori_pose_edit[5], "0").toDouble();
+    obj.request.tran_z = loadQString(this->tran_z_edit, "0.1").toDouble();
+    ROS_INFO_STREAM("run goal!!!");
+    this->svg_to_ways_paint_task.run_goal(obj);
 }

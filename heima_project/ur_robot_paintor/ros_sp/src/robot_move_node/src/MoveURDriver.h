@@ -39,7 +39,8 @@ class MoveURDriver : public SimpleURDriver {
     void run_goal0(GoalHandle_t);
 
       protected:
-    int idx = 0;
+    int idx      = 0;
+    int prev_idx = 0;
 
     void _set_driver_event();
     int run_next();

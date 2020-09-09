@@ -7,10 +7,17 @@
 #include "my_robot_move_msgs/Point.h"
 
 MoveURDriver::MoveURDriver(const std::string& host, int port)
-    : SimpleURDriver() {
+    : SimpleURDriver(host, port) {
 }
 
 void MoveURDriver::run_goal0(GoalHandle_t handle) {
+    auto& ways = handle.getGoal()->ways.data;
+    qInfo() << "ways size:" << handle.getGoal()->ways.data.size() << __func__;
+    // for (auto& p : ways) {
+    // qInfo() << p.x << " " << p.y << " " << p.z << " " << p.rx << " " << p.ry
+    //<< " " << p.rz;
+    //}
+
     this->handle = handle;
     _set_driver_event();
     emit this->connect_to_host();
@@ -20,7 +27,8 @@ void MoveURDriver::_set_driver_event() {
     this->on_connected_func = [this]() {
         ROS_INFO_STREAM("connect to '" + this->host + ":" +
                         std::to_string(this->port) + "' successed!");
-        this->idx = 0;
+        this->idx      = 0;
+        this->prev_idx = this->idx - 1;
     };
 
     this->on_disconnected_func = [this]() {
@@ -39,7 +47,7 @@ void MoveURDriver::_set_driver_event() {
             this->on_goal_successed_func();
         }
         auto& ways       = this->handle.getGoal()->ways.data;
-        feedback.percent = float(ways.size()) / float(this->idx + 1);
+        feedback.percent = float(this->idx + 1) / float(ways.size());
         feedback.code    = code;
         if (idx < ways.size()) feedback.current_pose = ways.at(idx);
         handle.publishFeedback(feedback);
@@ -67,18 +75,26 @@ int MoveURDriver::run_next() {
 
     my_robot_move_msgs::Point pnt = ways.at(idx);
     auto er                       = movel_error(this->ur_data, pnt);
+    auto s                        = get_movel_str(pnt.x,
+                           pnt.y,
+                           pnt.z,
+                           pnt.rx,
+                           pnt.ry,
+                           pnt.rz,
+                           goal->acceleration,
+                           goal->velocity);
+    qInfo() << tr(s.c_str()) << " in idx_" << idx << "********** error:" << er
+            << " -- epsilon:" << epsilon;
     if (er <= epsilon) {
         idx++;
     } else {
-        auto&& s = get_movel_str(pnt.x,
-                                 pnt.y,
-                                 pnt.z,
-                                 pnt.rx,
-                                 pnt.ry,
-                                 pnt.rz,
-                                 goal->acceleration,
-                                 goal->velocity);
+        // qInfo() << tr(s.c_str()) << " in idx_" << idx;
         emit this->print(s);
+    }
+    if (idx != prev_idx) {
+        prev_idx = idx;
+        // qInfo() << tr(s.c_str()) << " in idx_" << idx
+        //<< "********** error:" << er << " -- epsilon:" << epsilon;
     }
     return 0;
 }

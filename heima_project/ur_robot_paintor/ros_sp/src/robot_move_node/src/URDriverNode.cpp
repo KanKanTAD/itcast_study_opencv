@@ -47,6 +47,7 @@ URDriverNode::URDriverNode(ros::NodeHandle& node,
 void URDriverNode::goal_callback(GoalHandle_t handle) {
     ROS_INFO_STREAM("got it");
     handle.setAccepted();
+    qInfo() << "ways size:" << handle.getGoal()->ways.data.size() << __func__;
     emit create_task(handle);
 }
 
@@ -75,8 +76,12 @@ void URDriverNode::remove_task(GoalHandle_t handle) {
 }
 
 void URDriverNode::on_create_task(GoalHandle_t handle) {
+    qInfo() << "ways size:" << handle.getGoal()->ways.data.size() << __func__;
     auto goal = handle.getGoal();
+    qInfo() << "create task to ->" << tr(goal->host.c_str()) << ":"
+            << goal->port;
     MoveURDriver::Ptr_t driver{new MoveURDriver(goal->host, goal->port)};
+    driver->on_connected_func      = []() {};
     driver->on_goal_successed_func = [this, handle]() {
         this->remove_task(handle);
     };

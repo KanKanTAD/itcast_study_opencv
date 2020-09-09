@@ -45,6 +45,7 @@ void SimpleURDriver::on_disconnected() {
     this->on_disconnected_func();
 }
 void SimpleURDriver::on_readyread() {
+    // qInfo() << "readyread!!!";
     auto bytes = socket.readAll();
     URData::set_by_qbytearray(this->ur_data, bytes);
     this->on_readyread_func();
@@ -64,6 +65,8 @@ void SimpleURDriver::on_disconnect_from_host() {
     socket.disconnectFromHost();
 }
 void SimpleURDriver::on_print(const std::string& s) {
+    // qInfo() << "print to ->" << tr(this->host.c_str()) << ":" << port
+    //<< " data >>> '" << tr(s.c_str()) << "';";
     socket.write(QString::fromStdString(s).toUtf8());
-    socket.flush();
+    // socket.flush();
 }

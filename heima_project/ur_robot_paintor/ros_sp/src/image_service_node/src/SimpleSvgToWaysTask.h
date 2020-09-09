@@ -27,6 +27,6 @@ class SimpleSvgToWaysTask : public MyTask {
     static void _set_default_request_bean(Bean_t&);
     static bool _set_bean_pathd_by_filename0(Bean_t&, const std::string&);
     static bool _set_bean_pathd_by_filename1(Bean_t&, const std::string&);
-    void call(Bean_t&);
+    void run_goal(Bean_t&);
     virtual void cancel() override;
 };
