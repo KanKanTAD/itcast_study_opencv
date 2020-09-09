@@ -159,11 +159,11 @@ add_executable(test_listen_node src/test_listen.cpp)
 # )
 target_link_libraries(test_node
    ${catkin_LIBRARIES}
-   ${OpenCV_Libs}
+   ${OpenCV_LIBS}
 )
 target_link_libraries(test_listen_node
    ${catkin_LIBRARIES}
-   ${OpenCV_Libs}
+   ${OpenCV_LIBS}
 )
 
 #############
