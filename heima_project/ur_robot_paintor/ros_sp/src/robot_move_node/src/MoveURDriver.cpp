@@ -46,9 +46,11 @@ void MoveURDriver::_set_driver_event() {
         } else if (1 == code) {
             this->on_goal_successed_func();
         }
-        auto& ways       = this->handle.getGoal()->ways.data;
-        feedback.percent = float(this->idx + 1) / float(ways.size());
-        feedback.code    = code;
+        auto& ways = this->handle.getGoal()->ways.data;
+        feedback.percent =
+            100.0f * ((float)this->idx + 1.0f) / ((float)ways.size() + 1.0f);
+        // qInfo() << "percent->" << feedback.percent;
+        feedback.code = code;
         if (idx < ways.size()) feedback.current_pose = ways.at(idx);
         handle.publishFeedback(feedback);
     };
