@@ -6,4 +6,4 @@
 
     
 
-![complete_test_pic](complete_test_pic.png)
+![complete_test_pic](./complete_test_pic.png)
