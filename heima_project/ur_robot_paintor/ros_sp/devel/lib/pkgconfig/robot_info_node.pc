@@ -1,8 +1,0 @@
-prefix=/home/tad/Public/itcast_study_opencv/heima_project/ur_robot_paintor/ros_sp/devel
-
-Name: robot_info_node
-Description: Description of robot_info_node
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

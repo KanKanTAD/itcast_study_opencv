@@ -1,8 +1,0 @@
-prefix=/home/tad/Public/itcast_study_opencv/heima_project/ur_robot_paintor/ros_sp/devel
-
-Name: image_service_node
-Description: Description of image_service_node
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
